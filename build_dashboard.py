@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parent
 CSV_PATH = ROOT / "datatable-sem-trilha.csv"
 XLSX_PATH = ROOT / "visitantes-2.0.xlsx"
 OUT_HTML = ROOT / "dashboard-visitantes.html"
+INDEX_HTML = ROOT / "index.html"
 
 CULTOS = {
     1: {"id": "fe-milagres", "nome": "Fé e Milagres", "dia": "Terça"},
@@ -1136,8 +1137,9 @@ def main():
     json_str = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     html = HTML_TEMPLATE.replace("__DATA_JSON__", json_str)
     OUT_HTML.write_text(html, encoding="utf-8")
+    INDEX_HTML.write_text(html, encoding="utf-8")
     print(
-        f"OK: {OUT_HTML.name} ({len(records)} registros, "
+        f"OK: {OUT_HTML.name} e {INDEX_HTML.name} ({len(records)} registros, "
         f"M:{data['genero']['masculino']} F:{data['genero']['feminino']}, "
         f"{len(data['origem'])} origens, {len(html)//1024} KB)"
     )
