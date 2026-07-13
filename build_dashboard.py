@@ -8,8 +8,11 @@ from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 
+import pandas as pd
+
 ROOT = Path(__file__).resolve().parent
 CSV_PATH = ROOT / "datatable-sem-trilha.csv"
+XLSX_PATH = ROOT / "visitantes-2.0.xlsx"
 OUT_HTML = ROOT / "dashboard-visitantes.html"
 
 CULTOS = {
@@ -32,6 +35,20 @@ def norm_phone(value: str) -> str:
     return re.sub(r"\D", "", value or "")
 
 
+def norm_name(value: str) -> str:
+    return re.sub(r"\s+", " ", str(value or "").strip().lower())
+
+
+def dedupe_key(row) -> tuple:
+    """Mesmo nome + celular + data + horário = duplicata. Manhã e noite no mesmo dia são distintos."""
+    return (
+        norm_name(row.get("Nome")),
+        norm_phone(row.get("Celular")),
+        row.get("Data de Cadastro"),
+        row.get("Hora de Cadastro") or "",
+    )
+
+
 def moving_avg(values, window=3):
     out = []
     for i in range(len(values)):
@@ -46,6 +63,112 @@ def month_key(dt: datetime) -> str:
 
 def iso_date(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%d")
+
+
+def parse_datetime(value):
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    s = str(value).strip()
+    if not s or s in {"-", "nan", "NaT", "None"}:
+        return None
+    for fmt in ("%d/%m/%Y %H:%M", "%d/%m/%Y", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+        try:
+            if fmt == "%d/%m/%Y %H:%M":
+                return datetime.strptime(s[:16], fmt)
+            return datetime.strptime(s[:10], fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def valid_visit_date(dt: datetime | None) -> bool:
+    return bool(dt and 2020 <= dt.year <= 2030)
+
+
+def normalize_genero(value) -> str | None:
+    if not value:
+        return None
+    s = re.sub(r"[^\w\s]", "", str(value).lower())
+    if "femin" in s:
+        return "feminino"
+    if "masc" in s:
+        return "masculino"
+    return None
+
+
+def normalize_origem(value) -> str | None:
+    if not value:
+        return None
+    s = str(value).strip()
+    return s if s and s not in {"-", "nan", "None"} else None
+
+
+def load_csv_rows():
+    with CSV_PATH.open("r", encoding="utf-8-sig", newline="") as fh:
+        rows = list(csv.DictReader(fh))
+    for row in rows:
+        row["Hora de Cadastro"] = ""
+    return rows
+
+
+def load_xlsx_rows():
+    if not XLSX_PATH.exists():
+        return []
+    df = pd.read_excel(XLSX_PATH, header=1)
+    rows = []
+    for _, item in df.iterrows():
+        visita = parse_datetime(item.get("Data da Visita"))
+        resposta = parse_datetime(item.get("Data da Resposta"))
+        dt = visita if valid_visit_date(visita) else resposta
+        if not valid_visit_date(dt):
+            continue
+        hora = resposta.strftime("%H:%M") if resposta else ""
+        rows.append(
+            {
+                "Nome": str(item.get("Nome Completo") or "").strip(),
+                "Email": "",
+                "Data de Cadastro": dt.strftime("%d/%m/%Y"),
+                "Hora de Cadastro": hora,
+                "Celular": str(item.get("Celular") or "").strip(),
+                "Contato": str(item.get("Observação") or "").strip(),
+                "Sexo": str(item.get("Sexo") or "").strip(),
+                "Como Conheceu a Igreja": str(item.get("Como Conheceu a Igreja") or "").strip(),
+                "Culto Label": str(item.get("Culto") or "").strip(),
+            }
+        )
+    return rows
+
+
+def merge_rows(csv_rows, xlsx_rows):
+    merged = {}
+    order = []
+
+    def add_row(row, prefer_new=False):
+        key = dedupe_key(row)
+        if key in merged:
+            existing = merged[key]
+            for field in ("Sexo", "Como Conheceu a Igreja", "Contato", "Culto Label"):
+                new_val = row.get(field)
+                if new_val and (prefer_new or not existing.get(field)):
+                    existing[field] = new_val
+            if row.get("Nome") and (prefer_new or not existing.get("Nome")):
+                existing["Nome"] = row["Nome"]
+        else:
+            merged[key] = dict(row)
+            order.append(key)
+
+    for row in csv_rows:
+        add_row(row)
+    for row in xlsx_rows:
+        add_row(row, prefer_new=True)
+
+    return [merged[key] for key in order]
+
+
+def load_all_rows():
+    return merge_rows(load_csv_rows(), load_xlsx_rows())
 
 
 def build_records(rows):
@@ -66,11 +189,13 @@ def build_records(rows):
                 "contato": (row.get("Contato") or "").strip(),
                 "data": dt.strftime("%d/%m/%Y"),
                 "data_iso": iso_date(dt),
+                "hora": (row.get("Hora de Cadastro") or "").strip() or None,
                 "weekday": WEEKDAYS[dt.weekday()],
                 "culto_id": culto["id"],
                 "culto": culto["nome"],
-                "genero": None,
-                "origem": None,
+                "genero": normalize_genero(row.get("Sexo")),
+                "origem": normalize_origem(row.get("Como Conheceu a Igreja")),
+                "culto_label": (row.get("Culto Label") or "").strip() or None,
             }
         )
     return records
@@ -128,7 +253,10 @@ def aggregate(records):
     for phone, visits in by_phone.items():
         visits_sorted = sorted(visits, key=lambda r: r["data_iso"])
         cultos = sorted({v["culto"] for v in visits_sorted})
-        historico = [{"data": v["data"], "culto": v["culto"]} for v in visits_sorted]
+        historico = [
+            {"data": v["data"], "culto": v["culto"], "hora": v.get("hora")}
+            for v in visits_sorted
+        ]
         pessoas.append(
             {
                 "nome": visits_sorted[-1]["nome"] or "Sem nome",
@@ -139,8 +267,8 @@ def aggregate(records):
                 "ultima": historico[-1]["data"],
                 "cultos": cultos,
                 "historico": historico,
-                "genero": None,
-                "origem": None,
+                "genero": next((v["genero"] for v in reversed(visits_sorted) if v.get("genero")), None),
+                "origem": next((v["origem"] for v in reversed(visits_sorted) if v.get("origem")), None),
             }
         )
     pessoas.sort(key=lambda p: (-p["visitas"], p["nome"].lower()))
@@ -153,10 +281,23 @@ def aggregate(records):
     second_half = sum(counts[half:]) or 0
     tendencia = round((second_half - first_half) / first_half * 100, 1)
 
+    genero_counts = Counter()
+    origem_counts = Counter()
+    for rec in records:
+        genero = rec.get("genero")
+        if genero == "masculino":
+            genero_counts["masculino"] += 1
+        elif genero == "feminino":
+            genero_counts["feminino"] += 1
+        else:
+            genero_counts["nao_informado"] += 1
+        if rec.get("origem"):
+            origem_counts[rec["origem"]] += 1
+
     return {
         "meta": {
             "igreja": "Sara Nossa Terra — Morumbi Sul",
-            "fonte": "datatable-sem-trilha.csv",
+            "fonte": "datatable-sem-trilha.csv + visitantes-2.0.xlsx",
             "periodo_inicio": ranking[0]["date"] if ranking else None,
             "periodo_fim": ranking[-1]["date"] if ranking else None,
             "gerado_em": datetime.now().strftime("%d/%m/%Y %H:%M"),
@@ -201,8 +342,15 @@ def aggregate(records):
             if p["visitas"] > 1
         ],
         "tendencia_pct": tendencia,
-        "genero": {"masculino": 0, "feminino": 0, "nao_informado": len(records)},
-        "origem": [],
+        "genero": {
+            "masculino": genero_counts["masculino"],
+            "feminino": genero_counts["feminino"],
+            "nao_informado": genero_counts["nao_informado"],
+        },
+        "origem": [
+            {"nome": nome, "count": count}
+            for nome, count in origem_counts.most_common()
+        ],
         "registros": records,
         "pessoas": pessoas,
     }
@@ -478,24 +626,24 @@ footer{
     </section>
 
     <section class="section">
-      <div class="section-head"><h2>Perfil & origem</h2><p>Áreas reservadas para a base atualizada</p></div>
+      <div class="section-head"><h2>Perfil & origem</h2><p>Distribuição por sexo e como conheceu a igreja</p></div>
       <div class="grid2">
         <div class="card">
           <h3>Masculino × Feminino</h3>
           <div class="hint">Distribuição por gênero dos visitantes</div>
           <div class="chart-box h220"><canvas id="chartGenero"></canvas></div>
-          <div class="placeholder-box" style="margin-top:12px" id="generoPlaceholder">
+          <div class="placeholder-box" style="margin-top:12px;display:none" id="generoPlaceholder">
             <div class="icon">◐</div>
-            <p><strong>Aguardando base atualizada</strong><br>Os dados de gênero serão exibidos assim que a planilha for enviada com essa informação.</p>
+            <p><strong>Sem dados de sexo no filtro atual</strong><br>Os registros deste período ainda não possuem essa informação.</p>
           </div>
         </div>
         <div class="card">
           <h3>Origem da visita</h3>
           <div class="hint">Como as pessoas chegaram à igreja</div>
           <div class="chart-box h220"><canvas id="chartOrigem"></canvas></div>
-          <div class="placeholder-box" style="margin-top:12px" id="origemPlaceholder">
+          <div class="placeholder-box" style="margin-top:12px;display:none" id="origemPlaceholder">
             <div class="icon">◎</div>
-            <p><strong>Aguardando base atualizada</strong><br>Barra de origem será preenchida com Instagram, indicação, panfleto, etc.</p>
+            <p><strong>Sem dados de origem no filtro atual</strong><br>Nenhum registro com "Como conheceu a igreja" neste recorte.</p>
           </div>
         </div>
       </div>
@@ -539,7 +687,7 @@ footer{
       <div class="card" style="padding:0">
         <div class="table-wrap">
           <table id="pessoasTable">
-            <thead><tr><th>Pessoa</th><th>Contato</th><th>Cultos</th><th>Visitas</th><th>Última visita</th></tr></thead>
+            <thead><tr><th>Pessoa</th><th>Contato</th><th>Sexo</th><th>Origem</th><th>Cultos</th><th>Visitas</th><th>Última visita</th></tr></thead>
             <tbody id="pessoasBody"></tbody>
           </table>
         </div>
@@ -617,11 +765,13 @@ function computeStats(regs){
   for(const r of sorted){
     byDate[r.data] = (byDate[r.data]||0) + 1;
     const key = r.telefone_norm || r.nome.toLowerCase();
-    if(!byPhone[key]) byPhone[key] = {nome:r.nome, telefone:r.telefone, email:r.email, visitas:0, cultos:new Set(), historico:[]};
+    if(!byPhone[key]) byPhone[key] = {nome:r.nome, telefone:r.telefone, email:r.email, visitas:0, cultos:new Set(), historico:[], genero:null, origem:null};
     byPhone[key].visitas++;
     byPhone[key].cultos.add(r.culto);
-    byPhone[key].historico.push({data:r.data, culto:r.culto});
+    byPhone[key].historico.push({data:r.data, culto:r.culto, hora:r.hora});
     byPhone[key].nome = r.nome || byPhone[key].nome;
+    if(r.genero) byPhone[key].genero = r.genero;
+    if(r.origem) byPhone[key].origem = r.origem;
     const mk = r.data_iso.slice(0,7);
     byMonth[mk] = (byMonth[mk]||0) + 1;
     if(!firstSeen[key]){ firstSeen[key]=r.data_iso; novosMonth[mk]=(novosMonth[mk]||0)+1; }
@@ -654,9 +804,20 @@ function computeStats(regs){
     return {
       nome: p.nome||'Sem nome', telefone:p.telefone, email:p.email||'',
       visitas:p.visitas, cultos:[...p.cultos], historico:hist,
+      genero:p.genero, origem:p.origem,
       primeira:hist[0].data, ultima:hist[hist.length-1].data
     };
   }).sort((a,b)=>b.visitas-a.visitas || a.nome.localeCompare(b.nome));
+
+  const genero = {masculino:0, feminino:0, nao_informado:0};
+  const origemMap = {};
+  for(const r of sorted){
+    if(r.genero==='masculino') genero.masculino++;
+    else if(r.genero==='feminino') genero.feminino++;
+    else genero.nao_informado++;
+    if(r.origem) origemMap[r.origem] = (origemMap[r.origem]||0)+1;
+  }
+  const origem = Object.entries(origemMap).sort((a,b)=>b[1]-a[1]).map(([nome,count])=>({nome, count}));
 
   const retornaram = pessoas.filter(p=>p.visitas>1).length;
   const freq = {};
@@ -676,7 +837,7 @@ function computeStats(regs){
     maior, menor, ranking: [...ranking].sort((a,b)=>b.count-a.count),
     evolucao, distCulto, distWd, crescimento,
     novos_por_mes: months.map(m=>({month:m, count:novosMonth[m]||0})),
-    pessoas, freq, tendencia
+    pessoas, freq, tendencia, genero, origem
   };
 }
 
@@ -723,6 +884,13 @@ function renderInsights(s){
   }
   const abaixo = s.ranking.filter(r=>r.count < s.media * 0.6);
   if(abaixo.length) insights.push({tag:'Atenção', txt:`<strong>${abaixo.length}</strong> culto(s) abaixo de 60% da média — oportunidade de acompanhamento.`});
+  if(s.genero.masculino + s.genero.feminino > 0){
+    const pctF = Math.round(s.genero.feminino/(s.genero.masculino+s.genero.feminino)*100);
+    insights.push({tag:'Perfil', txt:`No recorte atual: <strong>${pctF}% feminino</strong> e <strong>${100-pctF}% masculino</strong>.`});
+  }
+  if(s.origem.length){
+    insights.push({tag:'Origem', txt:`Principal canal: <strong>${s.origem[0].nome}</strong> (${s.origem[0].count} registros).`});
+  }
   document.getElementById('insights').innerHTML = insights.map(i=>`<div class="insight"><div class="tag">${i.tag}</div><div class="txt">${i.txt}</div></div>`).join('');
 }
 
@@ -781,22 +949,22 @@ function renderCharts(s){
 
   // Placeholder charts
   destroyChart('genero');
-  const g = RAW.genero;
+  const g = s.genero;
   const hasGenero = g.masculino + g.feminino > 0;
   document.getElementById('generoPlaceholder').style.display = hasGenero? 'none':'block';
   charts.genero = new Chart(document.getElementById('chartGenero'),{
     type:'doughnut',
-    data:{labels:['Masculino','Feminino','Não informado'], datasets:[{data:[g.masculino,g.feminino,g.nao_informado], backgroundColor:['#fff','#aaa','#333'], borderWidth:0}]},
+    data:{labels:['Masculino','Feminino','Não informado'], datasets:[{data:[g.masculino,g.feminino,g.nao_informado], backgroundColor:['#ffffff','#b3b3b3','#333333'], borderWidth:0}]},
     options:{responsive:true, maintainAspectRatio:false, cutout:'55%', plugins:{legend:{position:'bottom', labels:{color:COLORS.text}}}}
   });
 
   destroyChart('origem');
-  const origens = RAW.origem || [];
+  const origens = s.origem || [];
   const hasOrigem = origens.length > 0;
   document.getElementById('origemPlaceholder').style.display = hasOrigem? 'none':'block';
   charts.origem = new Chart(document.getElementById('chartOrigem'),{
     type:'bar',
-    data:{labels: hasOrigem? origens.map(o=>o.nome):['—'], datasets:[{data: hasOrigem? origens.map(o=>o.count):[0], backgroundColor:COLORS.muted, borderRadius:6}]},
+    data:{labels: hasOrigem? origens.map(o=>o.nome):['—'], datasets:[{data: hasOrigem? origens.map(o=>o.count):[0], backgroundColor:COLORS.white, borderRadius:6}]},
     options:chartOpts({indexAxis:'y', plugins:{legend:{display:false}}})
   });
 }
@@ -837,6 +1005,8 @@ function filteredPessoas(s){
   return list;
 }
 
+function fmtGenero(g){ return g==='masculino'?'Masculino':g==='feminino'?'Feminino':'—'; }
+
 function renderPessoasTable(s){
   const list = filteredPessoas(s);
   const totalPages = Math.max(1, Math.ceil(list.length / state.pageSize));
@@ -848,11 +1018,13 @@ function renderPessoasTable(s){
     <tr data-idx="${start+i}" style="cursor:pointer">
       <td><strong>${p.nome}</strong>${p.visitas>1?'<span class="badge retorno">retorno</span>':''}</td>
       <td>${p.telefone||'—'}<br><span style="color:var(--muted);font-size:11px">${p.email||''}</span></td>
+      <td>${fmtGenero(p.genero)}</td>
+      <td>${p.origem||'—'}</td>
       <td>${p.cultos.map(c=>`<span class="badge">${c}</span>`).join('')}</td>
       <td class="num">${p.visitas}</td>
       <td>${p.ultima}</td>
     </tr>
-  `).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px">Nenhuma pessoa encontrada</td></tr>';
+  `).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px">Nenhuma pessoa encontrada</td></tr>';
 
   document.getElementById('pageInfo').textContent = `${list.length} pessoas · página ${state.page}/${totalPages}`;
   document.getElementById('prevPage').disabled = state.page<=1;
@@ -871,11 +1043,13 @@ function showPersonDetail(p){
     <div class="detail-grid">
       <div class="detail-item"><div class="k">Telefone</div><div class="v">${p.telefone||'—'}</div></div>
       <div class="detail-item"><div class="k">E-mail</div><div class="v">${p.email||'—'}</div></div>
+      <div class="detail-item"><div class="k">Sexo</div><div class="v">${fmtGenero(p.genero)}</div></div>
+      <div class="detail-item"><div class="k">Como conheceu</div><div class="v">${p.origem||'—'}</div></div>
       <div class="detail-item"><div class="k">Total de visitas</div><div class="v">${p.visitas}</div></div>
       <div class="detail-item"><div class="k">Primeira / Última</div><div class="v">${p.primeira} → ${p.ultima}</div></div>
     </div>
     <div class="detail-item"><div class="k">Histórico de cultos</div>
-      <div class="visit-timeline">${p.historico.map(v=>`<span class="visit-tag">${v.data} · ${v.culto}</span>`).join('')}</div>
+      <div class="visit-timeline">${p.historico.map(v=>`<span class="visit-tag">${v.data}${v.hora?` ${v.hora}`:''} · ${v.culto}</span>`).join('')}</div>
     </div>
   `;
   el.scrollIntoView({behavior:'smooth', block:'nearest'});
@@ -956,14 +1130,17 @@ function renderAll(){
 
 
 def main():
-    with CSV_PATH.open("r", encoding="utf-8-sig", newline="") as fh:
-        rows = list(csv.DictReader(fh))
+    rows = load_all_rows()
     records = build_records(rows)
     data = aggregate(records)
     json_str = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     html = HTML_TEMPLATE.replace("__DATA_JSON__", json_str)
     OUT_HTML.write_text(html, encoding="utf-8")
-    print(f"OK: {OUT_HTML.name} ({len(records)} registros, {len(html)//1024} KB)")
+    print(
+        f"OK: {OUT_HTML.name} ({len(records)} registros, "
+        f"M:{data['genero']['masculino']} F:{data['genero']['feminino']}, "
+        f"{len(data['origem'])} origens, {len(html)//1024} KB)"
+    )
 
 
 if __name__ == "__main__":
