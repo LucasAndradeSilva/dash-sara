@@ -17,10 +17,44 @@ OUT_HTML = ROOT / "dashboard-visitantes.html"
 INDEX_HTML = ROOT / "index.html"
 
 CULTOS = {
-    1: {"id": "fe-milagres", "nome": "Fé e Milagres", "dia": "Terça"},
-    3: {"id": "quinta-profetica", "nome": "Quinta Profética", "dia": "Quinta"},
-    5: {"id": "arena", "nome": "Arena", "dia": "Sábado"},
-    6: {"id": "culto-familia", "nome": "Culto da Família", "dia": "Domingo", "nota": "Manhã + Noite"},
+    "fe-milagres": {"id": "fe-milagres", "nome": "Fé e Milagres", "dia": "Terça"},
+    "quinta-profetica": {
+        "id": "quinta-profetica",
+        "nome": "Quinta Profética",
+        "dia": "Quinta",
+    },
+    "arena": {"id": "arena", "nome": "Arena", "dia": "Sábado"},
+    "culto-familia-manha": {
+        "id": "culto-familia-manha",
+        "nome": "Culto da Família (Manhã)",
+        "dia": "Domingo",
+        "nota": "Domingo · Manhã",
+    },
+    "culto-familia-noite": {
+        "id": "culto-familia-noite",
+        "nome": "Culto da Família (Noite)",
+        "dia": "Domingo",
+        "nota": "Domingo · Noite",
+    },
+    "culto-familia": {
+        "id": "culto-familia",
+        "nome": "Culto da Família",
+        "dia": "Domingo",
+        "nota": "Domingo · sem horário",
+    },
+}
+CULTO_ORDER = [
+    "fe-milagres",
+    "quinta-profetica",
+    "arena",
+    "culto-familia-manha",
+    "culto-familia-noite",
+    "culto-familia",
+]
+CULTOS_BY_WEEKDAY = {
+    1: CULTOS["fe-milagres"],
+    3: CULTOS["quinta-profetica"],
+    5: CULTOS["arena"],
 }
 WEEKDAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
 
@@ -172,13 +206,32 @@ def load_all_rows():
     return merge_rows(load_csv_rows(), load_xlsx_rows())
 
 
+def resolve_culto(dt: datetime, culto_label: str | None, hora: str | None):
+    if dt.weekday() != 6:
+        return CULTOS_BY_WEEKDAY.get(dt.weekday())
+
+    label = (culto_label or "").lower()
+    if "manh" in label:
+        return CULTOS["culto-familia-manha"]
+    if "noite" in label:
+        return CULTOS["culto-familia-noite"]
+    if hora:
+        try:
+            hour = int(hora.split(":")[0])
+            return CULTOS["culto-familia-manha"] if hour < 16 else CULTOS["culto-familia-noite"]
+        except (ValueError, IndexError):
+            pass
+    return CULTOS["culto-familia"]
+
+
 def build_records(rows):
     records = []
     for row in rows:
         dt = parse_date(row["Data de Cadastro"])
         if not dt or dt.year < 2020:
             continue
-        culto = CULTOS.get(dt.weekday())
+        hora = (row.get("Hora de Cadastro") or "").strip() or None
+        culto = resolve_culto(dt, row.get("Culto Label"), hora)
         if not culto:
             continue
         records.append(
@@ -190,7 +243,7 @@ def build_records(rows):
                 "contato": (row.get("Contato") or "").strip(),
                 "data": dt.strftime("%d/%m/%Y"),
                 "data_iso": iso_date(dt),
-                "hora": (row.get("Hora de Cadastro") or "").strip() or None,
+                "hora": hora,
                 "weekday": WEEKDAYS[dt.weekday()],
                 "culto_id": culto["id"],
                 "culto": culto["nome"],
@@ -203,15 +256,19 @@ def build_records(rows):
 
 
 def aggregate(records):
-    by_date = defaultdict(list)
+    by_culto_date = defaultdict(list)
     by_phone = defaultdict(list)
     for rec in records:
-        by_date[rec["data"]].append(rec)
+        by_culto_date[(rec["data"], rec["culto_id"])].append(rec)
         if rec["telefone_norm"]:
             by_phone[rec["telefone_norm"]].append(rec)
 
+    culto_pos = {cid: i for i, cid in enumerate(CULTO_ORDER)}
     ranking = []
-    for date, items in sorted(by_date.items(), key=lambda x: parse_date(x[0])):
+    for (date, culto_id), items in sorted(
+        by_culto_date.items(), key=lambda x: (parse_date(x[0][0]), culto_pos.get(x[0][1], 999))
+    ):
+        rec = items[0]
         dt = parse_date(date)
         ranking.append(
             {
@@ -219,8 +276,8 @@ def aggregate(records):
                 "date_iso": iso_date(dt),
                 "count": len(items),
                 "weekday": WEEKDAYS[dt.weekday()],
-                "culto_id": CULTOS[dt.weekday()]["id"],
-                "culto": CULTOS[dt.weekday()]["nome"],
+                "culto_id": culto_id,
+                "culto": rec["culto"],
             }
         )
 
@@ -270,9 +327,16 @@ def aggregate(records):
                 "historico": historico,
                 "genero": next((v["genero"] for v in reversed(visits_sorted) if v.get("genero")), None),
                 "origem": next((v["origem"] for v in reversed(visits_sorted) if v.get("origem")), None),
+                "observacao": next((v["contato"] for v in reversed(visits_sorted) if v.get("contato")), None),
             }
         )
-    pessoas.sort(key=lambda p: (-p["visitas"], p["nome"].lower()))
+    pessoas.sort(
+        key=lambda p: (
+            -datetime.strptime(p["ultima"], "%d/%m/%Y").toordinal(),
+            -p["visitas"],
+            p["nome"].lower(),
+        )
+    )
 
     retornaram = sum(1 for p in pessoas if p["visitas"] > 1)
     freq = Counter(p["visitas"] for p in pessoas)
@@ -304,8 +368,8 @@ def aggregate(records):
             "gerado_em": datetime.now().strftime("%d/%m/%Y %H:%M"),
         },
         "cultos": [
-            {"id": c["id"], "nome": c["nome"], "dia": c["dia"], "nota": c.get("nota")}
-            for c in CULTOS.values()
+            {"id": CULTOS[cid]["id"], "nome": CULTOS[cid]["nome"], "dia": CULTOS[cid]["dia"], "nota": CULTOS[cid].get("nota")}
+            for cid in CULTO_ORDER
         ],
         "total_visitantes": len(records),
         "n_cultos": len(ranking),
@@ -319,10 +383,10 @@ def aggregate(records):
         "dist_culto": [
             {
                 "id": cid,
-                "nome": next(c["nome"] for c in CULTOS.values() if c["id"] == cid),
+                "nome": CULTOS[cid]["nome"],
                 "count": dist_culto[cid],
             }
-            for cid in ["fe-milagres", "quinta-profetica", "arena", "culto-familia"]
+            for cid in CULTO_ORDER
         ],
         "dist_weekday": [
             {"day": day, "count": dist_weekday.get(day, 0)}
@@ -604,7 +668,7 @@ footer{
           <div class="sub" id="heroMaiorMeta"></div>
         </div>
         <div class="mini-stat">
-          <div class="lbl">Tendência do período</div>
+          <div class="lbl" title="Compara o volume de registros da segunda metade do período com a primeira metade.">Tendência do período</div>
           <div class="val" id="heroTend">—</div>
           <div class="sub" id="heroTendMeta"></div>
         </div>
@@ -688,7 +752,7 @@ footer{
       <div class="card" style="padding:0">
         <div class="table-wrap">
           <table id="pessoasTable">
-            <thead><tr><th>Pessoa</th><th>Contato</th><th>Sexo</th><th>Origem</th><th>Cultos</th><th>Visitas</th><th>Última visita</th></tr></thead>
+            <thead><tr><th>Pessoa</th><th>Contato</th><th>Sexo</th><th>Origem</th><th>Observação</th><th>Cultos</th><th>Visitas</th><th>Última visita</th></tr></thead>
             <tbody id="pessoasBody"></tbody>
           </table>
         </div>
@@ -759,29 +823,30 @@ function filterRegistros(){
 }
 
 function computeStats(regs){
-  const byDate = {}, byPhone = {}, byMonth = {}, novosMonth = {};
+  const byCultoDate = {}, byPhone = {}, byMonth = {}, novosMonth = {};
   const firstSeen = {};
   const sorted = [...regs].sort((a,b)=>a.data_iso.localeCompare(b.data_iso));
 
   for(const r of sorted){
-    byDate[r.data] = (byDate[r.data]||0) + 1;
+    const cultoDateKey = `${r.data_iso}__${r.culto_id}`;
+    if(!byCultoDate[cultoDateKey]) byCultoDate[cultoDateKey] = {date:r.data, date_iso:r.data_iso, culto_id:r.culto_id, culto:r.culto, weekday:r.weekday, count:0};
+    byCultoDate[cultoDateKey].count++;
     const key = r.telefone_norm || r.nome.toLowerCase();
-    if(!byPhone[key]) byPhone[key] = {nome:r.nome, telefone:r.telefone, email:r.email, visitas:0, cultos:new Set(), historico:[], genero:null, origem:null};
+    if(!byPhone[key]) byPhone[key] = {nome:r.nome, telefone:r.telefone, email:r.email, visitas:0, cultos:new Set(), historico:[], genero:null, origem:null, observacao:null};
     byPhone[key].visitas++;
     byPhone[key].cultos.add(r.culto);
-    byPhone[key].historico.push({data:r.data, culto:r.culto, hora:r.hora});
+    byPhone[key].historico.push({data:r.data, data_iso:r.data_iso, culto:r.culto, hora:r.hora});
     byPhone[key].nome = r.nome || byPhone[key].nome;
     if(r.genero) byPhone[key].genero = r.genero;
     if(r.origem) byPhone[key].origem = r.origem;
+    if(r.contato && r.contato !== '-') byPhone[key].observacao = r.contato;
     const mk = r.data_iso.slice(0,7);
     byMonth[mk] = (byMonth[mk]||0) + 1;
     if(!firstSeen[key]){ firstSeen[key]=r.data_iso; novosMonth[mk]=(novosMonth[mk]||0)+1; }
   }
 
-  const ranking = Object.entries(byDate).map(([date,count])=>{
-    const rec = sorted.find(x=>x.data===date);
-    return {date, date_iso:rec.data_iso, count, weekday:rec.weekday, culto_id:rec.culto_id, culto:rec.culto};
-  }).sort((a,b)=>a.date_iso.localeCompare(b.date_iso));
+  const cultoOrder = Object.fromEntries(CULTOS.map((c, i) => [c.id, i]));
+  const ranking = Object.values(byCultoDate).sort((a,b)=>a.date_iso.localeCompare(b.date_iso) || (cultoOrder[a.culto_id] ?? 999) - (cultoOrder[b.culto_id] ?? 999));
 
   const counts = ranking.map(r=>r.count);
   const evolucao = ranking.map((r,i)=>{
@@ -802,13 +867,15 @@ function computeStats(regs){
 
   const pessoas = Object.values(byPhone).map(p=>{
     const hist = p.historico;
+    const ultimaIso = hist[hist.length-1].data_iso;
     return {
       nome: p.nome||'Sem nome', telefone:p.telefone, email:p.email||'',
       visitas:p.visitas, cultos:[...p.cultos], historico:hist,
       genero:p.genero, origem:p.origem,
-      primeira:hist[0].data, ultima:hist[hist.length-1].data
+      observacao:p.observacao,
+      primeira:hist[0].data, ultima:hist[hist.length-1].data, ultima_iso:ultimaIso
     };
-  }).sort((a,b)=>b.visitas-a.visitas || a.nome.localeCompare(b.nome));
+  }).sort((a,b)=>b.ultima_iso.localeCompare(a.ultima_iso) || b.visitas-a.visitas || a.nome.localeCompare(b.nome));
 
   const genero = {masculino:0, feminino:0, nao_informado:0};
   const origemMap = {};
@@ -846,14 +913,14 @@ function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[i
 
 function renderKPIs(s){
   const items = [
-    {v:s.total, l:'Registros'},
-    {v:s.unicos, l:'Únicos'},
+    {v:s.total, l:'Registros', hint:'Total de fichas registradas no filtro (inclui mais de uma visita da mesma pessoa).'},
+    {v:s.unicos, l:'Únicos', hint:'Quantidade de pessoas distintas identificadas por telefone ou nome.'},
     {v:s.n_cultos, l:'Cultos'},
     {v:s.media, l:'Média/culto'},
     {v:s.maior?s.maior.count:'—', l:'Maior culto'},
     {v:s.retornaram, l:'Retornaram'},
   ];
-  document.getElementById('kpiRow').innerHTML = items.map(i=>`<div class="kpi"><div class="v">${i.v}</div><div class="l">${i.l}</div></div>`).join('');
+  document.getElementById('kpiRow').innerHTML = items.map(i=>`<div class="kpi"${i.hint?` title="${i.hint.replaceAll('"','&quot;')}"`:''}><div class="v">${i.v}</div><div class="l">${i.l}</div></div>`).join('');
 }
 
 function renderHero(s){
@@ -999,7 +1066,8 @@ function filteredPessoas(s){
   const q = state.search.toLowerCase().trim();
   if(q) list = list.filter(p =>
     p.nome.toLowerCase().includes(q) || p.telefone.includes(q) ||
-    (p.email&&p.email.toLowerCase().includes(q)) || p.cultos.some(c=>c.toLowerCase().includes(q))
+    (p.email&&p.email.toLowerCase().includes(q)) || p.cultos.some(c=>c.toLowerCase().includes(q)) ||
+    (p.observacao&&p.observacao.toLowerCase().includes(q))
   );
   if(state.retorno==='novos') list = list.filter(p=>p.visitas===1);
   if(state.retorno==='retorno') list = list.filter(p=>p.visitas>1);
@@ -1021,11 +1089,12 @@ function renderPessoasTable(s){
       <td>${p.telefone||'—'}<br><span style="color:var(--muted);font-size:11px">${p.email||''}</span></td>
       <td>${fmtGenero(p.genero)}</td>
       <td>${p.origem||'—'}</td>
+      <td>${p.observacao||'—'}</td>
       <td>${p.cultos.map(c=>`<span class="badge">${c}</span>`).join('')}</td>
       <td class="num">${p.visitas}</td>
       <td>${p.ultima}</td>
     </tr>
-  `).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px">Nenhuma pessoa encontrada</td></tr>';
+  `).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:32px">Nenhuma pessoa encontrada</td></tr>';
 
   document.getElementById('pageInfo').textContent = `${list.length} pessoas · página ${state.page}/${totalPages}`;
   document.getElementById('prevPage').disabled = state.page<=1;
@@ -1046,6 +1115,7 @@ function showPersonDetail(p){
       <div class="detail-item"><div class="k">E-mail</div><div class="v">${p.email||'—'}</div></div>
       <div class="detail-item"><div class="k">Sexo</div><div class="v">${fmtGenero(p.genero)}</div></div>
       <div class="detail-item"><div class="k">Como conheceu</div><div class="v">${p.origem||'—'}</div></div>
+      <div class="detail-item"><div class="k">Observação</div><div class="v">${p.observacao||'—'}</div></div>
       <div class="detail-item"><div class="k">Total de visitas</div><div class="v">${p.visitas}</div></div>
       <div class="detail-item"><div class="k">Primeira / Última</div><div class="v">${p.primeira} → ${p.ultima}</div></div>
     </div>
