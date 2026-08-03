@@ -5,7 +5,7 @@ import csv
 import json
 import re
 from collections import Counter, defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -13,8 +13,10 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent
 CSV_PATH = ROOT / "datatable-sem-trilha.csv"
 XLSX_PATH = ROOT / "visitantes-2.0.xlsx"
+MEMBROS_XLSX_PATH = ROOT / "membros-2.0.xlsx"
 OUT_HTML = ROOT / "dashboard-visitantes.html"
 INDEX_HTML = ROOT / "index.html"
+OUT_JSON = ROOT / "dashboard-data.json"
 
 CULTOS = {
     "fe-milagres": {"id": "fe-milagres", "nome": "Fé e Milagres", "dia": "Terça"},
@@ -55,6 +57,14 @@ CULTOS_BY_WEEKDAY = {
     1: CULTOS["fe-milagres"],
     3: CULTOS["quinta-profetica"],
     5: CULTOS["arena"],
+}
+CULTO_WEEKDAY = {
+    "fe-milagres": 1,
+    "quinta-profetica": 3,
+    "arena": 5,
+    "culto-familia-manha": 6,
+    "culto-familia-noite": 6,
+    "culto-familia": 6,
 }
 WEEKDAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
 
@@ -138,6 +148,40 @@ def normalize_origem(value) -> str | None:
         return None
     s = str(value).strip()
     return s if s and s not in {"-", "nan", "None"} else None
+
+
+def fold_text(value: str) -> str:
+    s = str(value or "").lower()
+    replacements = str.maketrans(
+        {
+            "á": "a",
+            "à": "a",
+            "ã": "a",
+            "â": "a",
+            "é": "e",
+            "ê": "e",
+            "í": "i",
+            "ó": "o",
+            "ô": "o",
+            "õ": "o",
+            "ú": "u",
+            "ü": "u",
+            "ç": "c",
+        }
+    )
+    return s.translate(replacements)
+
+
+def parse_count(value) -> int | None:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return None
+    s = str(value).strip()
+    if not s or s in {"-", "nan", "None", "NaN", "NaT"}:
+        return None
+    try:
+        return int(float(s))
+    except ValueError:
+        return None
 
 
 def load_csv_rows():
@@ -224,6 +268,76 @@ def resolve_culto(dt: datetime, culto_label: str | None, hora: str | None):
     return CULTOS["culto-familia"]
 
 
+def resolve_culto_from_label(culto_label: str | None):
+    label = fold_text(culto_label or "")
+    if not label or label == "-":
+        return None
+    if "fe e milagres" in label:
+        return CULTOS["fe-milagres"]
+    if "quinta" in label:
+        return CULTOS["quinta-profetica"]
+    if "arena" in label:
+        return CULTOS["arena"]
+    if "familia" in label:
+        if "manh" in label:
+            return CULTOS["culto-familia-manha"]
+        if "noite" in label:
+            return CULTOS["culto-familia-noite"]
+        return CULTOS["culto-familia"]
+    return None
+
+
+def infer_culto_date(resposta: datetime, culto_id: str) -> datetime:
+    """Usa o dia do culto mais recente até a data da resposta."""
+    target = CULTO_WEEKDAY.get(culto_id)
+    if target is None:
+        return resposta
+    day = resposta.replace(hour=0, minute=0, second=0, microsecond=0)
+    for _ in range(7):
+        if day.weekday() == target:
+            return day
+        day -= timedelta(days=1)
+    return resposta
+
+
+def load_membros_rows():
+    if not MEMBROS_XLSX_PATH.exists():
+        return []
+    df = pd.read_excel(MEMBROS_XLSX_PATH, header=1)
+    rows = []
+    for _, item in df.iterrows():
+        resposta = parse_datetime(item.get("Data da Resposta"))
+        if not resposta:
+            continue
+        culto = resolve_culto_from_label(str(item.get("Culto") or ""))
+        if not culto:
+            continue
+        member_count = parse_count(item.get("Quantidade de Membros"))
+        if member_count is None:
+            member_count = parse_count(item.get("Quantidade de Adultos"))
+        children_count = parse_count(item.get("Quantidade de Crianças")) or 0
+        if member_count is None:
+            continue
+        culto_dt = infer_culto_date(resposta, culto["id"])
+        rows.append(
+            {
+                "id": item.get("#ID"),
+                "date": culto_dt.strftime("%d/%m/%Y"),
+                "date_iso": iso_date(culto_dt),
+                "weekday": WEEKDAYS[culto_dt.weekday()],
+                "culto_id": culto["id"],
+                "culto": culto["nome"],
+                "member_count": member_count,
+                "children_count": children_count,
+                "culto_label": str(item.get("Culto") or "").strip() or None,
+                "resposta": resposta.strftime("%d/%m/%Y %H:%M"),
+            }
+        )
+    culto_pos = {cid: i for i, cid in enumerate(CULTO_ORDER)}
+    rows.sort(key=lambda r: (r["date_iso"], culto_pos.get(r["culto_id"], 999)))
+    return rows
+
+
 def build_records(rows):
     records = []
     for row in rows:
@@ -255,7 +369,8 @@ def build_records(rows):
     return records
 
 
-def aggregate(records):
+def aggregate(records, participacao=None):
+    participacao = participacao or []
     by_culto_date = defaultdict(list)
     by_phone = defaultdict(list)
     for rec in records:
@@ -359,10 +474,16 @@ def aggregate(records):
         if rec.get("origem"):
             origem_counts[rec["origem"]] += 1
 
+    total_membros = sum(p["member_count"] for p in participacao)
+    total_criancas = sum(p["children_count"] for p in participacao)
+    fontes = ["datatable-sem-trilha.csv", "visitantes-2.0.xlsx"]
+    if participacao:
+        fontes.append("membros-2.0.xlsx")
+
     return {
         "meta": {
             "igreja": "Sara Nossa Terra — Morumbi Sul",
-            "fonte": "datatable-sem-trilha.csv + visitantes-2.0.xlsx",
+            "fonte": " + ".join(fontes),
             "periodo_inicio": ranking[0]["date"] if ranking else None,
             "periodo_fim": ranking[-1]["date"] if ranking else None,
             "gerado_em": datetime.now().strftime("%d/%m/%Y %H:%M"),
@@ -416,6 +537,9 @@ def aggregate(records):
             {"nome": nome, "count": count}
             for nome, count in origem_counts.most_common()
         ],
+        "total_membros": total_membros,
+        "total_criancas": total_criancas,
+        "participacao": participacao,
         "registros": records,
         "pessoas": pessoas,
     }
@@ -517,7 +641,7 @@ main{max-width:1320px;margin:0 auto;padding:24px;position:relative;z-index:1}
 .mini-stat .val{font-size:28px;font-weight:700;margin-top:6px}
 .mini-stat .sub{font-size:12px;color:var(--muted);margin-top:4px}
 
-.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:24px}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:24px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;text-align:center}
 .kpi .v{font-size:24px;font-weight:700}
 .kpi .l{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-top:4px;font-weight:600}
@@ -613,6 +737,7 @@ footer{
   .filters{grid-template-columns:1fr}
   .topbar-inner{padding:12px 16px}
   main{padding:16px}
+  .chart-box.h300{height:280px}
 }
 </style>
 </head>
@@ -726,6 +851,19 @@ footer{
     </section>
 
     <section class="section">
+      <div class="section-head"><h2>Participação por culto</h2><p>Membros e crianças registrados em cada culto</p></div>
+      <div class="card">
+        <h3>Membros × Crianças</h3>
+        <div class="hint">Contagem oficial de presença por culto no filtro atual</div>
+        <div class="chart-box h300"><canvas id="chartParticipacao"></canvas></div>
+        <div class="placeholder-box" style="margin-top:12px;display:none" id="participacaoPlaceholder">
+          <div class="icon">▣</div>
+          <p><strong>Sem contagem de participação no filtro atual</strong><br>Nenhum registro de membros/crianças neste recorte de datas ou cultos.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
       <div class="section-head"><h2>Linha do tempo</h2><p>Evolução culto a culto com média móvel</p></div>
       <div class="card"><div class="chart-box h300"><canvas id="chartEvolucao"></canvas></div></div>
     </section>
@@ -787,7 +925,9 @@ const CULT_MAP = Object.fromEntries(CULTOS.map(c => [c.id, c]));
 
 const COLORS = {
   text:'#8a8a8a', grid:'#222', white:'#ffffff',
-  cultos:['#ffffff','#cccccc','#999999','#666666'],
+  cultos:['#ffffff','#d9d9d9','#b3b3b3','#8c8c8c','#666666','#404040'],
+  membros:'#ffffff',
+  criancas:'#777777',
   muted:'#444444'
 };
 
@@ -822,7 +962,11 @@ function filterRegistros(){
   return RAW.registros.filter(r => state.cultos.has(r.culto_id) && inRange(r.data_iso));
 }
 
-function computeStats(regs){
+function filterParticipacao(){
+  return (RAW.participacao || []).filter(r => state.cultos.has(r.culto_id) && inRange(r.date_iso));
+}
+
+function computeStats(regs, participacao){
   const byCultoDate = {}, byPhone = {}, byMonth = {}, novosMonth = {};
   const firstSeen = {};
   const sorted = [...regs].sort((a,b)=>a.data_iso.localeCompare(b.data_iso));
@@ -900,12 +1044,17 @@ function computeStats(regs){
   const t2 = counts.slice(half).reduce((a,b)=>a+b,0);
   const tendencia = t1? Math.round((t2-t1)/t1*1000)/10 : 0;
 
+  const part = participacao || [];
+  const totalMembros = part.reduce((a,r)=>a+(r.member_count||0),0);
+  const totalCriancas = part.reduce((a,r)=>a+(r.children_count||0),0);
+
   return {
     total: regs.length, n_cultos: ranking.length, unicos: pessoas.length, retornaram, media,
     maior, menor, ranking: [...ranking].sort((a,b)=>b.count-a.count),
     evolucao, distCulto, distWd, crescimento,
     novos_por_mes: months.map(m=>({month:m, count:novosMonth[m]||0})),
-    pessoas, freq, tendencia, genero, origem
+    pessoas, freq, tendencia, genero, origem,
+    participacao: part, totalMembros, totalCriancas
   };
 }
 
@@ -919,6 +1068,8 @@ function renderKPIs(s){
     {v:s.media, l:'Média/culto'},
     {v:s.maior?s.maior.count:'—', l:'Maior culto'},
     {v:s.retornaram, l:'Retornaram'},
+    {v:s.totalMembros, l:'Membros', hint:'Soma da quantidade de membros/adultos registrados nos cultos do filtro.'},
+    {v:s.totalCriancas, l:'Crianças', hint:'Soma da quantidade de crianças registradas nos cultos do filtro.'},
   ];
   document.getElementById('kpiRow').innerHTML = items.map(i=>`<div class="kpi"${i.hint?` title="${i.hint.replaceAll('"','&quot;')}"`:''}><div class="v">${i.v}</div><div class="l">${i.l}</div></div>`).join('');
 }
@@ -958,6 +1109,10 @@ function renderInsights(s){
   }
   if(s.origem.length){
     insights.push({tag:'Origem', txt:`Principal canal: <strong>${s.origem[0].nome}</strong> (${s.origem[0].count} registros).`});
+  }
+  if(s.participacao.length){
+    const topPart = [...s.participacao].sort((a,b)=>(b.member_count+b.children_count)-(a.member_count+a.children_count))[0];
+    insights.push({tag:'Participação', txt:`Maior presença: <strong>${topPart.member_count} membros</strong> e <strong>${topPart.children_count} crianças</strong> em ${topPart.date} (${topPart.culto}).`});
   }
   document.getElementById('insights').innerHTML = insights.map(i=>`<div class="insight"><div class="tag">${i.tag}</div><div class="txt">${i.txt}</div></div>`).join('');
 }
@@ -1034,6 +1189,34 @@ function renderCharts(s){
     type:'bar',
     data:{labels: hasOrigem? origens.map(o=>o.nome):['—'], datasets:[{data: hasOrigem? origens.map(o=>o.count):[0], backgroundColor:COLORS.white, borderRadius:6}]},
     options:chartOpts({indexAxis:'y', plugins:{legend:{display:false}}})
+  });
+
+  destroyChart('participacao');
+  const part = s.participacao || [];
+  const hasPart = part.length > 0;
+  const partCanvas = document.getElementById('chartParticipacao');
+  const partPlaceholder = document.getElementById('participacaoPlaceholder');
+  if(partPlaceholder) partPlaceholder.style.display = hasPart? 'none':'block';
+  if(partCanvas) partCanvas.parentElement.style.display = hasPart? 'block':'none';
+  charts.participacao = new Chart(partCanvas,{
+    type:'bar',
+    data:{
+      labels: hasPart? part.map(p=>`${p.date.slice(0,5)} · ${p.culto}`):['—'],
+      datasets:[
+        {label:'Membros', data: hasPart? part.map(p=>p.member_count):[0], backgroundColor:COLORS.membros, borderRadius:6, maxBarThickness:36},
+        {label:'Crianças', data: hasPart? part.map(p=>p.children_count):[0], backgroundColor:COLORS.criancas, borderRadius:6, maxBarThickness:36}
+      ]
+    },
+    options:chartOpts({
+      plugins:{
+        legend:{display:true, position:'top', labels:{color:COLORS.text, boxWidth:12, usePointStyle:true}},
+        tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y}`}}
+      },
+      scales:{
+        x:{grid:{color:COLORS.grid}, ticks:{color:COLORS.text, maxRotation:45, minRotation:0}},
+        y:{grid:{color:COLORS.grid}, ticks:{color:COLORS.text}, beginAtZero:true}
+      }
+    })
   });
 }
 
@@ -1136,12 +1319,13 @@ function renderRecorrentes(s){
 
 function renderAll(){
   const regs = filterRegistros();
-  const s = computeStats(regs);
+  const participacao = filterParticipacao();
+  const s = computeStats(regs, participacao);
   renderHero(s); renderKPIs(s); renderInsights(s);
   renderCharts(s); renderWeekday(s); renderRanking(s);
   renderPessoasStats(s); renderPessoasTable(s); renderRecorrentes(s);
   document.getElementById('footer').innerHTML =
-    `Sara Morumbi Sul · ${RAW.meta.fonte} · ${s.total} registros em cultos oficiais · gerado em ${RAW.meta.gerado_em}`;
+    `Sara Morumbi Sul · ${RAW.meta.fonte} · ${s.total} registros em cultos oficiais · ${s.totalMembros} membros / ${s.totalCriancas} crianças · gerado em ${RAW.meta.gerado_em}`;
 }
 
 // Init filters UI
@@ -1203,15 +1387,19 @@ function renderAll(){
 def main():
     rows = load_all_rows()
     records = build_records(rows)
-    data = aggregate(records)
+    participacao = load_membros_rows()
+    data = aggregate(records, participacao)
     json_str = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     html = HTML_TEMPLATE.replace("__DATA_JSON__", json_str)
     OUT_HTML.write_text(html, encoding="utf-8")
     INDEX_HTML.write_text(html, encoding="utf-8")
+    OUT_JSON.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(
         f"OK: {OUT_HTML.name} e {INDEX_HTML.name} ({len(records)} registros, "
         f"M:{data['genero']['masculino']} F:{data['genero']['feminino']}, "
-        f"{len(data['origem'])} origens, {len(html)//1024} KB)"
+        f"{len(data['origem'])} origens, {len(participacao)} contagens, "
+        f"{data['total_membros']} membros / {data['total_criancas']} crianças, "
+        f"{len(html)//1024} KB)"
     )
 
 
