@@ -3,8 +3,8 @@
     "igreja": "Sara Nossa Terra — Morumbi Sul",
     "fonte": "datatable-sem-trilha.csv + visitantes-2.0.xlsx + membros-2.0.xlsx",
     "periodo_inicio": "07/03/2026",
-    "periodo_fim": "09/08/2026",
-    "gerado_em": "11/08/2026 15:26"
+    "periodo_fim": "16/08/2026",
+    "gerado_em": "17/08/2026 00:57"
   },
   "cultos": [
     {
@@ -44,11 +44,11 @@
       "nota": "Domingo · sem horário"
     }
   ],
-  "total_visitantes": 710,
-  "n_cultos": 88,
-  "visitantes_unicos": 688,
+  "total_visitantes": 727,
+  "n_cultos": 92,
+  "visitantes_unicos": 705,
   "retornaram": 22,
-  "media_por_culto": 8.07,
+  "media_por_culto": 7.9,
   "maior_culto": {
     "date": "12/04/2026",
     "date_iso": "2026-04-12",
@@ -419,6 +419,14 @@
       "culto": "Culto da Família (Noite)"
     },
     {
+      "date": "16/08/2026",
+      "date_iso": "2026-08-16",
+      "count": 7,
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-manha",
+      "culto": "Culto da Família (Manhã)"
+    },
+    {
       "date": "10/05/2026",
       "date_iso": "2026-05-10",
       "count": 6,
@@ -499,6 +507,14 @@
       "culto": "Culto da Família (Manhã)"
     },
     {
+      "date": "16/08/2026",
+      "date_iso": "2026-08-16",
+      "count": 5,
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-noite",
+      "culto": "Culto da Família (Noite)"
+    },
+    {
       "date": "10/03/2026",
       "date_iso": "2026-03-10",
       "count": 4,
@@ -569,6 +585,14 @@
       "weekday": "Domingo",
       "culto_id": "culto-familia-manha",
       "culto": "Culto da Família (Manhã)"
+    },
+    {
+      "date": "13/08/2026",
+      "date_iso": "2026-08-13",
+      "count": 4,
+      "weekday": "Quinta",
+      "culto_id": "quinta-profetica",
+      "culto": "Quinta Profética"
     },
     {
       "date": "24/03/2026",
@@ -769,6 +793,14 @@
       "weekday": "Domingo",
       "culto_id": "culto-familia-manha",
       "culto": "Culto da Família (Manhã)"
+    },
+    {
+      "date": "11/08/2026",
+      "date_iso": "2026-08-11",
+      "count": 1,
+      "weekday": "Terça",
+      "culto_id": "fe-milagres",
+      "culto": "Fé e Milagres"
     }
   ],
   "evolucao": [
@@ -1299,18 +1331,42 @@
       "date_iso": "2026-08-09",
       "count": 3,
       "ma3": 3.33
+    },
+    {
+      "date": "11/08/2026",
+      "date_iso": "2026-08-11",
+      "count": 1,
+      "ma3": 1.67
+    },
+    {
+      "date": "13/08/2026",
+      "date_iso": "2026-08-13",
+      "count": 4,
+      "ma3": 2.67
+    },
+    {
+      "date": "16/08/2026",
+      "date_iso": "2026-08-16",
+      "count": 7,
+      "ma3": 4.0
+    },
+    {
+      "date": "16/08/2026",
+      "date_iso": "2026-08-16",
+      "count": 5,
+      "ma3": 5.33
     }
   ],
   "dist_culto": [
     {
       "id": "fe-milagres",
       "nome": "Fé e Milagres",
-      "count": 222
+      "count": 223
     },
     {
       "id": "quinta-profetica",
       "nome": "Quinta Profética",
-      "count": 141
+      "count": 145
     },
     {
       "id": "arena",
@@ -1320,12 +1376,12 @@
     {
       "id": "culto-familia-manha",
       "nome": "Culto da Família (Manhã)",
-      "count": 38
+      "count": 45
     },
     {
       "id": "culto-familia-noite",
       "nome": "Culto da Família (Noite)",
-      "count": 28
+      "count": 33
     },
     {
       "id": "culto-familia",
@@ -1336,11 +1392,11 @@
   "dist_weekday": [
     {
       "day": "Terça",
-      "count": 222
+      "count": 223
     },
     {
       "day": "Quinta",
-      "count": 141
+      "count": 145
     },
     {
       "day": "Sábado",
@@ -1348,10 +1404,10 @@
     },
     {
       "day": "Domingo",
-      "count": 304
+      "count": 316
     }
   ],
-  "media_domingo": 10.48,
+  "media_domingo": 10.19,
   "crescimento_mensal": [
     {
       "month": "2026-03",
@@ -1380,8 +1436,8 @@
     },
     {
       "month": "2026-08",
-      "count": 52,
-      "pct": -54.8
+      "count": 69,
+      "pct": -40.0
     }
   ],
   "novos_por_mes": [
@@ -1407,7 +1463,7 @@
     },
     {
       "month": "2026-08",
-      "count": 51
+      "count": 68
     }
   ],
   "mes_mais_visitantes": {
@@ -1417,7 +1473,7 @@
   "freq_dist": [
     {
       "visits": 1,
-      "people": 666
+      "people": 683
     },
     {
       "visits": 2,
@@ -1425,40 +1481,40 @@
     }
   ],
   "top_recorrentes": [],
-  "tendencia_pct": -20.7,
+  "tendencia_pct": -26.1,
   "genero": {
-    "masculino": 62,
-    "feminino": 105,
+    "masculino": 70,
+    "feminino": 114,
     "nao_informado": 543
   },
   "origem": [
     {
       "nome": "Amigo/Familiar",
-      "count": 114
+      "count": 125
     },
     {
       "nome": "Outros",
-      "count": 19
+      "count": 20
+    },
+    {
+      "nome": "Passou na Frente",
+      "count": 13
     },
     {
       "nome": "Instagram",
-      "count": 11
+      "count": 12
     },
     {
       "nome": "Célula",
       "count": 11
     },
     {
-      "nome": "Passou na Frente",
-      "count": 9
-    },
-    {
       "nome": "Outras Redes Sociais",
       "count": 3
     }
   ],
-  "total_membros": 4108,
-  "total_criancas": 519,
+  "total_membros": 5559,
+  "total_criancas": 729,
   "participacao": [
     {
       "id": 5724,
@@ -1579,6 +1635,54 @@
       "children_count": 42,
       "culto_label": "Culto da Família (Noite)",
       "resposta": "09/08/2026 23:25"
+    },
+    {
+      "id": 5993,
+      "date": "11/08/2026",
+      "date_iso": "2026-08-11",
+      "weekday": "Terça",
+      "culto_id": "fe-milagres",
+      "culto": "Fé e Milagres",
+      "member_count": 459,
+      "children_count": 55,
+      "culto_label": "Terça · Fé e Milagres",
+      "resposta": "11/08/2026 22:03"
+    },
+    {
+      "id": 6054,
+      "date": "13/08/2026",
+      "date_iso": "2026-08-13",
+      "weekday": "Quinta",
+      "culto_id": "quinta-profetica",
+      "culto": "Quinta Profética",
+      "member_count": 321,
+      "children_count": 38,
+      "culto_label": "Quinta · Quinta Profética",
+      "resposta": "13/08/2026 21:49"
+    },
+    {
+      "id": 6084,
+      "date": "16/08/2026",
+      "date_iso": "2026-08-16",
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-manha",
+      "culto": "Culto da Família (Manhã)",
+      "member_count": 459,
+      "children_count": 90,
+      "culto_label": "Domingo · Culto da Família (Manhã)",
+      "resposta": "16/08/2026 12:34"
+    },
+    {
+      "id": 6088,
+      "date": "16/08/2026",
+      "date_iso": "2026-08-16",
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-noite",
+      "culto": "Culto da Família (Noite)",
+      "member_count": 212,
+      "children_count": 27,
+      "culto_label": "Culto da Família (Noite)",
+      "resposta": "16/08/2026 20:35"
     }
   ],
   "registros": [
@@ -12941,9 +13045,638 @@
       "genero": "feminino",
       "origem": "Amigo/Familiar",
       "culto_label": "Culto Manhã"
+    },
+    {
+      "nome": "Thiago Sales",
+      "email": "",
+      "telefone": "(11) 95317-4608",
+      "telefone_norm": "11953174608",
+      "contato": "Através do Ilson",
+      "data": "11/08/2026",
+      "data_iso": "2026-08-11",
+      "hora": "22:15",
+      "weekday": "Terça",
+      "culto_id": "fe-milagres",
+      "culto": "Fé e Milagres",
+      "genero": "masculino",
+      "origem": "Amigo/Familiar",
+      "culto_label": "Culto Noite"
+    },
+    {
+      "nome": "Marinalva Da Silva",
+      "email": "",
+      "telefone": "(11) 98161-6220",
+      "telefone_norm": "11981616220",
+      "contato": "-",
+      "data": "13/08/2026",
+      "data_iso": "2026-08-13",
+      "hora": "19:22",
+      "weekday": "Quinta",
+      "culto_id": "quinta-profetica",
+      "culto": "Quinta Profética",
+      "genero": "feminino",
+      "origem": "Amigo/Familiar",
+      "culto_label": "Culto Noite"
+    },
+    {
+      "nome": "Maiara Alves",
+      "email": "",
+      "telefone": "(11) 97315-2718",
+      "telefone_norm": "11973152718",
+      "contato": "-",
+      "data": "13/08/2026",
+      "data_iso": "2026-08-13",
+      "hora": "20:01",
+      "weekday": "Quinta",
+      "culto_id": "quinta-profetica",
+      "culto": "Quinta Profética",
+      "genero": "feminino",
+      "origem": "Amigo/Familiar",
+      "culto_label": "Culto Noite"
+    },
+    {
+      "nome": "Luiz Queiroz",
+      "email": "",
+      "telefone": "(11) 95843-8455",
+      "telefone_norm": "11958438455",
+      "contato": "Célula Marcados",
+      "data": "13/08/2026",
+      "data_iso": "2026-08-13",
+      "hora": "21:59",
+      "weekday": "Quinta",
+      "culto_id": "quinta-profetica",
+      "culto": "Quinta Profética",
+      "genero": "masculino",
+      "origem": "Amigo/Familiar",
+      "culto_label": "Culto Noite"
+    },
+    {
+      "nome": "Yara amorim",
+      "email": "",
+      "telefone": "(11) 96545-6575",
+      "telefone_norm": "11965456575",
+      "contato": "Café de boas vindas",
+      "data": "13/08/2026",
+      "data_iso": "2026-08-13",
+      "hora": "22:09",
+      "weekday": "Quinta",
+      "culto_id": "quinta-profetica",
+      "culto": "Quinta Profética",
+      "genero": "feminino",
+      "origem": "Amigo/Familiar",
+      "culto_label": "Culto Noite"
+    },
+    {
+      "nome": "Debora Cristina",
+      "email": "",
+      "telefone": "(13) 99688-8944",
+      "telefone_norm": "13996888944",
+      "contato": "-",
+      "data": "16/08/2026",
+      "data_iso": "2026-08-16",
+      "hora": "12:11",
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-manha",
+      "culto": "Culto da Família (Manhã)",
+      "genero": "feminino",
+      "origem": "Amigo/Familiar",
+      "culto_label": "Culto Manhã"
+    },
+    {
+      "nome": "Miqueias Silva Caetano",
+      "email": "",
+      "telefone": "(11) 96774-3091",
+      "telefone_norm": "11967743091",
+      "contato": "Vai vir mais vezes",
+      "data": "16/08/2026",
+      "data_iso": "2026-08-16",
+      "hora": "12:12",
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-manha",
+      "culto": "Culto da Família (Manhã)",
+      "genero": "masculino",
+      "origem": "Amigo/Familiar",
+      "culto_label": "Culto Manhã"
+    },
+    {
+      "nome": "Izaias Francisco dos Santos",
+      "email": "",
+      "telefone": "(11) 95123-0866",
+      "telefone_norm": "11951230866",
+      "contato": "-",
+      "data": "16/08/2026",
+      "data_iso": "2026-08-16",
+      "hora": "12:12",
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-manha",
+      "culto": "Culto da Família (Manhã)",
+      "genero": "masculino",
+      "origem": "Amigo/Familiar",
+      "culto_label": "Culto Manhã"
+    },
+    {
+      "nome": "Jennifer Andrade",
+      "email": "",
+      "telefone": "(11) 93252-4004",
+      "telefone_norm": "11932524004",
+      "contato": "-",
+      "data": "16/08/2026",
+      "data_iso": "2026-08-16",
+      "hora": "12:12",
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-manha",
+      "culto": "Culto da Família (Manhã)",
+      "genero": "feminino",
+      "origem": "Outros",
+      "culto_label": "Culto Manhã"
+    },
+    {
+      "nome": "Jucilene Borges",
+      "email": "",
+      "telefone": "(11) 98355-1074",
+      "telefone_norm": "11983551074",
+      "contato": "Gostou muito",
+      "data": "16/08/2026",
+      "data_iso": "2026-08-16",
+      "hora": "12:13",
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-manha",
+      "culto": "Culto da Família (Manhã)",
+      "genero": "feminino",
+      "origem": "Amigo/Familiar",
+      "culto_label": "Culto Manhã"
+    },
+    {
+      "nome": "Paula Santos",
+      "email": "",
+      "telefone": "(11) 96187-7902",
+      "telefone_norm": "11961877902",
+      "contato": "-",
+      "data": "16/08/2026",
+      "data_iso": "2026-08-16",
+      "hora": "12:13",
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-manha",
+      "culto": "Culto da Família (Manhã)",
+      "genero": "feminino",
+      "origem": "Instagram",
+      "culto_label": "Culto Manhã"
+    },
+    {
+      "nome": "Wagner",
+      "email": "",
+      "telefone": "(11) 95433-6901",
+      "telefone_norm": "11954336901",
+      "contato": "-",
+      "data": "16/08/2026",
+      "data_iso": "2026-08-16",
+      "hora": "12:13",
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-manha",
+      "culto": "Culto da Família (Manhã)",
+      "genero": "masculino",
+      "origem": "Passou na Frente",
+      "culto_label": "Culto Manhã"
+    },
+    {
+      "nome": "Camila da Silva",
+      "email": "",
+      "telefone": "(11) 97739-7405",
+      "telefone_norm": "11977397405",
+      "contato": "Irma",
+      "data": "16/08/2026",
+      "data_iso": "2026-08-16",
+      "hora": "20:57",
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-noite",
+      "culto": "Culto da Família (Noite)",
+      "genero": "feminino",
+      "origem": "Passou na Frente",
+      "culto_label": "Culto Noite"
+    },
+    {
+      "nome": "Ana Julia Garcia",
+      "email": "",
+      "telefone": "(11) 96725-1222",
+      "telefone_norm": "11967251222",
+      "contato": "Irma",
+      "data": "16/08/2026",
+      "data_iso": "2026-08-16",
+      "hora": "20:58",
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-noite",
+      "culto": "Culto da Família (Noite)",
+      "genero": "feminino",
+      "origem": "Passou na Frente",
+      "culto_label": "Culto Noite"
+    },
+    {
+      "nome": "Danilo. Costa dos Santos",
+      "email": "",
+      "telefone": "(11) 98907-4637",
+      "telefone_norm": "11989074637",
+      "contato": "-",
+      "data": "16/08/2026",
+      "data_iso": "2026-08-16",
+      "hora": "20:58",
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-noite",
+      "culto": "Culto da Família (Noite)",
+      "genero": "masculino",
+      "origem": "Amigo/Familiar",
+      "culto_label": "Culto Noite"
+    },
+    {
+      "nome": "Lucas Santos rodrigues",
+      "email": "",
+      "telefone": "(11) 98762-2091",
+      "telefone_norm": "11987622091",
+      "contato": "Irmão",
+      "data": "16/08/2026",
+      "data_iso": "2026-08-16",
+      "hora": "20:58",
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-noite",
+      "culto": "Culto da Família (Noite)",
+      "genero": "masculino",
+      "origem": "Passou na Frente",
+      "culto_label": "Culto Noite"
+    },
+    {
+      "nome": "Carlos Alexandre de Lima",
+      "email": "",
+      "telefone": "(11) 35933-0023",
+      "telefone_norm": "11359330023",
+      "contato": "-",
+      "data": "16/08/2026",
+      "data_iso": "2026-08-16",
+      "hora": "20:59",
+      "weekday": "Domingo",
+      "culto_id": "culto-familia-noite",
+      "culto": "Culto da Família (Noite)",
+      "genero": "masculino",
+      "origem": "Amigo/Familiar",
+      "culto_label": "Culto Noite"
     }
   ],
   "pessoas": [
+    {
+      "nome": "Ana Julia Garcia",
+      "telefone": "(11) 96725-1222",
+      "email": "",
+      "visitas": 1,
+      "primeira": "16/08/2026",
+      "ultima": "16/08/2026",
+      "cultos": [
+        "Culto da Família (Noite)"
+      ],
+      "historico": [
+        {
+          "data": "16/08/2026",
+          "culto": "Culto da Família (Noite)",
+          "hora": "20:58"
+        }
+      ],
+      "genero": "feminino",
+      "origem": "Passou na Frente",
+      "observacao": "Irma"
+    },
+    {
+      "nome": "Camila da Silva",
+      "telefone": "(11) 97739-7405",
+      "email": "",
+      "visitas": 1,
+      "primeira": "16/08/2026",
+      "ultima": "16/08/2026",
+      "cultos": [
+        "Culto da Família (Noite)"
+      ],
+      "historico": [
+        {
+          "data": "16/08/2026",
+          "culto": "Culto da Família (Noite)",
+          "hora": "20:57"
+        }
+      ],
+      "genero": "feminino",
+      "origem": "Passou na Frente",
+      "observacao": "Irma"
+    },
+    {
+      "nome": "Carlos Alexandre de Lima",
+      "telefone": "(11) 35933-0023",
+      "email": "",
+      "visitas": 1,
+      "primeira": "16/08/2026",
+      "ultima": "16/08/2026",
+      "cultos": [
+        "Culto da Família (Noite)"
+      ],
+      "historico": [
+        {
+          "data": "16/08/2026",
+          "culto": "Culto da Família (Noite)",
+          "hora": "20:59"
+        }
+      ],
+      "genero": "masculino",
+      "origem": "Amigo/Familiar",
+      "observacao": "-"
+    },
+    {
+      "nome": "Danilo. Costa dos Santos",
+      "telefone": "(11) 98907-4637",
+      "email": "",
+      "visitas": 1,
+      "primeira": "16/08/2026",
+      "ultima": "16/08/2026",
+      "cultos": [
+        "Culto da Família (Noite)"
+      ],
+      "historico": [
+        {
+          "data": "16/08/2026",
+          "culto": "Culto da Família (Noite)",
+          "hora": "20:58"
+        }
+      ],
+      "genero": "masculino",
+      "origem": "Amigo/Familiar",
+      "observacao": "-"
+    },
+    {
+      "nome": "Debora Cristina",
+      "telefone": "(13) 99688-8944",
+      "email": "",
+      "visitas": 1,
+      "primeira": "16/08/2026",
+      "ultima": "16/08/2026",
+      "cultos": [
+        "Culto da Família (Manhã)"
+      ],
+      "historico": [
+        {
+          "data": "16/08/2026",
+          "culto": "Culto da Família (Manhã)",
+          "hora": "12:11"
+        }
+      ],
+      "genero": "feminino",
+      "origem": "Amigo/Familiar",
+      "observacao": "-"
+    },
+    {
+      "nome": "Izaias Francisco dos Santos",
+      "telefone": "(11) 95123-0866",
+      "email": "",
+      "visitas": 1,
+      "primeira": "16/08/2026",
+      "ultima": "16/08/2026",
+      "cultos": [
+        "Culto da Família (Manhã)"
+      ],
+      "historico": [
+        {
+          "data": "16/08/2026",
+          "culto": "Culto da Família (Manhã)",
+          "hora": "12:12"
+        }
+      ],
+      "genero": "masculino",
+      "origem": "Amigo/Familiar",
+      "observacao": "-"
+    },
+    {
+      "nome": "Jennifer Andrade",
+      "telefone": "(11) 93252-4004",
+      "email": "",
+      "visitas": 1,
+      "primeira": "16/08/2026",
+      "ultima": "16/08/2026",
+      "cultos": [
+        "Culto da Família (Manhã)"
+      ],
+      "historico": [
+        {
+          "data": "16/08/2026",
+          "culto": "Culto da Família (Manhã)",
+          "hora": "12:12"
+        }
+      ],
+      "genero": "feminino",
+      "origem": "Outros",
+      "observacao": "-"
+    },
+    {
+      "nome": "Jucilene Borges",
+      "telefone": "(11) 98355-1074",
+      "email": "",
+      "visitas": 1,
+      "primeira": "16/08/2026",
+      "ultima": "16/08/2026",
+      "cultos": [
+        "Culto da Família (Manhã)"
+      ],
+      "historico": [
+        {
+          "data": "16/08/2026",
+          "culto": "Culto da Família (Manhã)",
+          "hora": "12:13"
+        }
+      ],
+      "genero": "feminino",
+      "origem": "Amigo/Familiar",
+      "observacao": "Gostou muito"
+    },
+    {
+      "nome": "Lucas Santos rodrigues",
+      "telefone": "(11) 98762-2091",
+      "email": "",
+      "visitas": 1,
+      "primeira": "16/08/2026",
+      "ultima": "16/08/2026",
+      "cultos": [
+        "Culto da Família (Noite)"
+      ],
+      "historico": [
+        {
+          "data": "16/08/2026",
+          "culto": "Culto da Família (Noite)",
+          "hora": "20:58"
+        }
+      ],
+      "genero": "masculino",
+      "origem": "Passou na Frente",
+      "observacao": "Irmão"
+    },
+    {
+      "nome": "Miqueias Silva Caetano",
+      "telefone": "(11) 96774-3091",
+      "email": "",
+      "visitas": 1,
+      "primeira": "16/08/2026",
+      "ultima": "16/08/2026",
+      "cultos": [
+        "Culto da Família (Manhã)"
+      ],
+      "historico": [
+        {
+          "data": "16/08/2026",
+          "culto": "Culto da Família (Manhã)",
+          "hora": "12:12"
+        }
+      ],
+      "genero": "masculino",
+      "origem": "Amigo/Familiar",
+      "observacao": "Vai vir mais vezes"
+    },
+    {
+      "nome": "Paula Santos",
+      "telefone": "(11) 96187-7902",
+      "email": "",
+      "visitas": 1,
+      "primeira": "16/08/2026",
+      "ultima": "16/08/2026",
+      "cultos": [
+        "Culto da Família (Manhã)"
+      ],
+      "historico": [
+        {
+          "data": "16/08/2026",
+          "culto": "Culto da Família (Manhã)",
+          "hora": "12:13"
+        }
+      ],
+      "genero": "feminino",
+      "origem": "Instagram",
+      "observacao": "-"
+    },
+    {
+      "nome": "Wagner",
+      "telefone": "(11) 95433-6901",
+      "email": "",
+      "visitas": 1,
+      "primeira": "16/08/2026",
+      "ultima": "16/08/2026",
+      "cultos": [
+        "Culto da Família (Manhã)"
+      ],
+      "historico": [
+        {
+          "data": "16/08/2026",
+          "culto": "Culto da Família (Manhã)",
+          "hora": "12:13"
+        }
+      ],
+      "genero": "masculino",
+      "origem": "Passou na Frente",
+      "observacao": "-"
+    },
+    {
+      "nome": "Luiz Queiroz",
+      "telefone": "(11) 95843-8455",
+      "email": "",
+      "visitas": 1,
+      "primeira": "13/08/2026",
+      "ultima": "13/08/2026",
+      "cultos": [
+        "Quinta Profética"
+      ],
+      "historico": [
+        {
+          "data": "13/08/2026",
+          "culto": "Quinta Profética",
+          "hora": "21:59"
+        }
+      ],
+      "genero": "masculino",
+      "origem": "Amigo/Familiar",
+      "observacao": "Célula Marcados"
+    },
+    {
+      "nome": "Maiara Alves",
+      "telefone": "(11) 97315-2718",
+      "email": "",
+      "visitas": 1,
+      "primeira": "13/08/2026",
+      "ultima": "13/08/2026",
+      "cultos": [
+        "Quinta Profética"
+      ],
+      "historico": [
+        {
+          "data": "13/08/2026",
+          "culto": "Quinta Profética",
+          "hora": "20:01"
+        }
+      ],
+      "genero": "feminino",
+      "origem": "Amigo/Familiar",
+      "observacao": "-"
+    },
+    {
+      "nome": "Marinalva Da Silva",
+      "telefone": "(11) 98161-6220",
+      "email": "",
+      "visitas": 1,
+      "primeira": "13/08/2026",
+      "ultima": "13/08/2026",
+      "cultos": [
+        "Quinta Profética"
+      ],
+      "historico": [
+        {
+          "data": "13/08/2026",
+          "culto": "Quinta Profética",
+          "hora": "19:22"
+        }
+      ],
+      "genero": "feminino",
+      "origem": "Amigo/Familiar",
+      "observacao": "-"
+    },
+    {
+      "nome": "Yara amorim",
+      "telefone": "(11) 96545-6575",
+      "email": "",
+      "visitas": 1,
+      "primeira": "13/08/2026",
+      "ultima": "13/08/2026",
+      "cultos": [
+        "Quinta Profética"
+      ],
+      "historico": [
+        {
+          "data": "13/08/2026",
+          "culto": "Quinta Profética",
+          "hora": "22:09"
+        }
+      ],
+      "genero": "feminino",
+      "origem": "Amigo/Familiar",
+      "observacao": "Café de boas vindas"
+    },
+    {
+      "nome": "Thiago Sales",
+      "telefone": "(11) 95317-4608",
+      "email": "",
+      "visitas": 1,
+      "primeira": "11/08/2026",
+      "ultima": "11/08/2026",
+      "cultos": [
+        "Fé e Milagres"
+      ],
+      "historico": [
+        {
+          "data": "11/08/2026",
+          "culto": "Fé e Milagres",
+          "hora": "22:15"
+        }
+      ],
+      "genero": "masculino",
+      "origem": "Amigo/Familiar",
+      "observacao": "Através do Ilson"
+    },
     {
       "nome": "Aline",
       "telefone": "(11) 98779-1977",
