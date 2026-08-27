@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0d">
+<title>Sara Morumbi Sul — Painel de Visitantes</title>
+<style>
+/* ======================================================
+   1. RESET & CUSTOM PROPERTIES
+   ====================================================== */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{
+  --bg-base:#0d0d0d;
+  --bg-surface:#1a1a1a;
+  --bg-elevated:#242424;
+  --bg-hover:#2e2e2e;
+  --border:#2e2e2e;
+  --border-light:rgba(255,255,255,.06);
+
+  --text-primary:#f0f0f0;
+  --text-secondary:#9ca3af;
+  --text-muted:#6b7280;
+
+  --accent:#7c3aed;
+  --accent-rgb:124,58,237;
+  --success:#10b981;
+  --success-rgb:16,185,129;
+  --warning:#f59e0b;
+  --warning-rgb:245,158,11;
+  --info:#3b82f6;
+  --info-rgb:59,130,246;
+  --danger:#ef4444;
+  --danger-rgb:239,68,68;
+
+  --gradient-hero:radial-gradient(ellipse at 20% 0%, rgba(124,58,237,.15) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 100%, rgba(16,185,129,.08) 0%, transparent 60%);
+
+  --radius-lg:16px;
+  --radius-md:12px;
+  --radius-sm:10px;
+  --radius-pill:999px;
+
+  --sidebar-w:240px;
+  --header-h:56px;
+  --tabbar-h:64px;
+
+  --ease:180ms ease;
+  --ease-slow:350ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
+}
+
+body{
+  font-family:system-ui,-apple-system,'Segoe UI',sans-serif;
+  color:var(--text-primary);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  background:linear-gradient(135deg,#0d0d0d 0%,#120d1a 50%,#0d0d0d 100%);
+  background-size:400% 400%;
+  animation:gradientShift 20s ease infinite;
+  overflow-x:hidden;
+}
+@keyframes gradientShift{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+a{color:inherit;text-decoration:none}
+button,input,select{font:inherit;color:inherit}
+button{background:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+::selection{background:rgba(124,58,237,.35)}
+
+.mesh-bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:var(--gradient-hero)}
+@media (max-width:1023.98px){
+  .mesh-bg{background:radial-gradient(ellipse at 50% 0%, rgba(124,58,237,.12) 0%, transparent 60%)}
+}
+
+/* ======================================================
+   2. UTILITIES — GLASS / NEUMORPHISM / SCROLL ANIM
+   ====================================================== */
+.glass{
+  background:rgba(255,255,255,.04);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.08);
+}
+@supports not (backdrop-filter: blur(1px)){
+  .glass{background:var(--bg-surface)}
+}
+
+.neu{
+  background:var(--bg-surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  box-shadow:4px 4px 10px rgba(0,0,0,.5), -4px -4px 10px rgba(255,255,255,.04);
+  transition:box-shadow var(--ease), border-color var(--ease), color var(--ease);
+}
+.neu.pressed, .neu:active{
+  box-shadow:inset 3px 3px 8px rgba(0,0,0,.5), inset -3px -3px 8px rgba(255,255,255,.04);
+}
+
+.animate-in{
+  opacity:0;
+  transform:translateY(16px);
+  transition:opacity var(--ease-slow), transform var(--ease-slow);
+}
+.animate-in.visible{opacity:1;transform:translateY(0)}
+@media (max-width:1023.98px){
+  .animate-in{transform:none}
+  .animate-in.visible{transform:none}
+}
+
+/* Micro-interactions */
+button, .chip, .nav-item, .tab-btn, .page-btn, .visitor-card, tr{
+  transition:all var(--ease);
+}
+.clickable, button, .chip{cursor:pointer}
+button:active, .chip:active{transform:scale(.97)}
+
+/* ======================================================
+   3. LAYOUT SHELL
+   ====================================================== */
+.sidebar{
+  display:none;
+  position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);
+  z-index:40;overflow:hidden;
+  background:rgba(255,255,255,.04);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-right:1px solid rgba(255,255,255,.08);
+}
+@media (min-width:1024px){ .sidebar{display:flex;flex-direction:column} }
+
+.sidebar-parallax{
+  position:absolute;top:-25%;left:-10%;right:-10%;height:150%;z-index:0;pointer-events:none;
+  background:var(--gradient-hero);
+  will-change:transform;
+}
+.sidebar-parallax::after{
+  content:'';position:absolute;right:-60px;top:10%;width:260px;height:320px;opacity:.05;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 100'%3E%3Cpath fill='%237c3aed' d='M40 5c-8 18-22 28-18 48 2 10 10 18 18 22 8-4 16-12 18-22 4-20-10-30-18-48z'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+
+.sidebar-inner{position:relative;z-index:1;display:flex;flex-direction:column;height:100%;padding:24px 16px;width:100%}
+.brand{display:flex;align-items:center;gap:12px;padding:0 8px 24px;min-width:0}
+.brand-logo{height:38px;width:38px;border-radius:10px;object-fit:cover;flex-shrink:0}
+.brand-text{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.brand-sub{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-secondary);font-weight:700}
+.brand-main{font-size:14px;font-weight:700;letter-spacing:-.01em;color:var(--text-primary);white-space:nowrap}
+
+.side-nav{position:relative;display:flex;flex-direction:column;gap:2px}
+.nav-item{
+  position:relative;display:flex;align-items:center;gap:12px;
+  padding:11px 14px;border-radius:var(--radius-sm);
+  color:var(--text-secondary);font-size:13px;font-weight:600;
+  border:0;text-align:left;z-index:1;
+}
+.nav-item svg{width:19px;height:19px;flex-shrink:0}
+.nav-item:hover{color:var(--text-primary);background:rgba(255,255,255,.03)}
+.nav-item.active{color:var(--text-primary)}
+.nav-indicator{
+  position:absolute;left:0;width:100%;height:41px;top:0;z-index:0;
+  background:linear-gradient(90deg, rgba(124,58,237,.22), rgba(124,58,237,.04));
+  border-left:2px solid var(--accent);
+  border-radius:var(--radius-sm);
+  transition:top 250ms ease;
+}
+.sidebar-footer{margin-top:auto;padding:14px 8px 4px;font-size:11px;color:var(--text-muted);line-height:1.5;border-top:1px solid var(--border-light)}
+
+.app-main{position:relative;z-index:1;min-height:100vh;padding-bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 20px)}
+@media (min-width:1024px){ .app-main{margin-left:var(--sidebar-w);padding-bottom:40px} }
+
+.app-header{
+  position:sticky;top:0;z-index:45;height:var(--header-h);
+  display:flex;align-items:center;gap:14px;padding:0 16px;position:relative;
+  background:rgba(255,255,255,.04);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+@media (max-width:1023.98px){
+  .app-header{background:radial-gradient(ellipse at 30% 0%, rgba(124,58,237,.14) 0%, var(--bg-surface) 70%)}
+}
+@media (min-width:1024px){ .app-header{padding:0 32px} }
+.app-header::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:2px;
+  background:linear-gradient(90deg,#7c3aed,#10b981,#7c3aed);
+  background-size:200% 100%;animation:borderShift 4s linear infinite;
+}
+@keyframes borderShift{0%{background-position:0% 0%}100%{background-position:200% 0%}}
+
+.header-mobile-only{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+@media (min-width:1024px){ .header-mobile-only{display:none} }
+.header-desktop-only{display:none;align-items:center;gap:18px;flex:1;min-width:0}
+@media (min-width:1024px){ .header-desktop-only{display:flex} }
+
+.header-logo{height:28px;width:28px;border-radius:8px;object-fit:cover;flex-shrink:0}
+.page-title{font-size:clamp(1.4rem,3vw,1.8rem);font-weight:700;letter-spacing:-.02em;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.icon-btn{
+  display:flex;align-items:center;justify-content:center;width:38px;height:38px;flex-shrink:0;
+  border-radius:var(--radius-sm);color:var(--text-secondary);border:0;background:transparent;
+}
+.icon-btn:hover{color:var(--text-primary);background:rgba(255,255,255,.05)}
+.icon-btn svg{width:20px;height:20px}
+.icon-btn.neu{background:var(--bg-surface)}
+
+.period-presets{display:none;gap:8px;margin-left:auto;flex-wrap:wrap}
+@media (min-width:1024px){ .period-presets{display:flex} }
+
+.period-chips-mobile{display:flex;gap:8px;overflow-x:auto;padding:12px 16px 2px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.period-chips-mobile::-webkit-scrollbar{display:none}
+@media (min-width:1024px){ .period-chips-mobile{display:none} }
+
+.chip{
+  background:var(--bg-surface);border:1px solid var(--border);color:var(--text-secondary);
+  padding:8px 15px;border-radius:var(--radius-pill);font-size:.75rem;font-weight:600;
+  white-space:nowrap;flex-shrink:0;scroll-snap-align:start;
+  box-shadow:3px 3px 8px rgba(0,0,0,.45), -3px -3px 8px rgba(255,255,255,.03);
+}
+.chip.active{color:var(--accent);border-color:rgba(124,58,237,.4);box-shadow:inset 2px 2px 6px rgba(0,0,0,.5), inset -2px -2px 6px rgba(255,255,255,.03)}
+.chip .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px;background:currentColor;opacity:.6}
+
+.chip-scroll{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.chip-scroll::-webkit-scrollbar{display:none}
+@media (min-width:1024px){ .chip-scroll{overflow:visible;flex-wrap:wrap} }
+
+/* Bottom tab bar (mobile) */
+.bottom-tabbar{
+  display:flex;position:fixed;left:0;right:0;bottom:0;z-index:50;
+  height:calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom);
+  background:rgba(255,255,255,.04);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-top:1px solid rgba(255,255,255,.08);
+}
+@media (min-width:1024px){ .bottom-tabbar{display:none} }
+.tab-btn{
+  position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;border:0;background:transparent;color:var(--text-secondary);font-size:10.5px;font-weight:600;
+}
+.tab-btn svg{width:21px;height:21px}
+.tab-btn.active{color:var(--text-primary)}
+.tab-btn:active{transform:scale(.94)}
+.tabbar-indicator{position:absolute;top:0;height:2px;width:25%;background:var(--accent);border-radius:2px;transition:left 250ms ease}
+
+/* ======================================================
+   4. CONTENT / TABS
+   ====================================================== */
+.content{position:relative}
+.tab-panel{display:none;padding:18px 16px 32px}
+@media (min-width:1024px){ .tab-panel{padding:28px 32px 40px} }
+.tab-panel.active{display:block;animation:tabFade 200ms ease}
+@keyframes tabFade{from{opacity:0}to{opacity:1}}
+
+.page-lead{color:var(--text-secondary);font-size:.85rem;line-height:1.6;margin-bottom:18px;max-width:640px}
+.block{margin-bottom:28px}
+.block-head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.block-head h2{font-size:1rem;font-weight:700;letter-spacing:-.01em;color:var(--text-primary)}
+.block-head p{font-size:.75rem;color:var(--text-secondary)}
+
+/* KPI bento grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px}
+@media (min-width:1024px){ .kpi-grid{max-width:760px;gap:16px} }
+.kpi-card{
+  position:relative;padding:18px 18px 16px;border-radius:var(--radius-lg);overflow:hidden;
+  background:var(--bg-surface);border:1px solid var(--border);
+  transition:border-color var(--ease), box-shadow var(--ease);
+}
+@media (min-width:1024px){
+  .kpi-card{background:rgba(255,255,255,.04);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08)}
+}
+.kpi-card:hover{border-color:rgba(124,58,237,.3);box-shadow:0 0 0 1px rgba(124,58,237,.15)}
+.kpi-icon{width:24px;height:24px;color:var(--accent);margin-bottom:10px}
+.kpi-value{font-size:clamp(1.8rem,4vw,2.4rem);font-weight:800;color:var(--text-primary);line-height:1.05;font-variant-numeric:tabular-nums}
+.kpi-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);font-weight:600;margin-top:6px}
+.kpi-badge{display:inline-flex;align-items:center;gap:3px;margin-top:10px;padding:3px 9px;border-radius:var(--radius-pill);font-size:.72rem;font-weight:700}
+.kpi-badge svg{width:11px;height:11px}
+.kpi-badge.up{background:rgba(var(--success-rgb),.15);color:var(--success)}
+.kpi-badge.down{background:rgba(var(--danger-rgb),.15);color:var(--danger)}
+.kpi-badge.flat{background:rgba(var(--info-rgb),.15);color:var(--info)}
+
+/* Insights row */
+.insights-row{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.insights-row::-webkit-scrollbar{display:none}
+@media (min-width:1024px){ .insights-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));overflow:visible} }
+.insight-card{flex:0 0 78%;max-width:280px;scroll-snap-align:start;padding:14px 16px}
+@media (min-width:480px){ .insight-card{flex:0 0 260px} }
+@media (min-width:1024px){ .insight-card{flex:auto;max-width:none} }
+.insight-tag{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:700}
+.insight-txt{font-size:.8rem;color:var(--text-secondary);margin-top:6px;line-height:1.5}
+.insight-txt strong{color:var(--text-primary);font-weight:700}
+
+/* Chart cards */
+.chart-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 18px 8px}
+@media (min-width:1024px){ .chart-card{padding:20px 20px 10px} }
+.chart-card h3{font-size:.9rem;font-weight:700;color:var(--text-primary)}
+.chart-card .hint{font-size:.72rem;color:var(--text-secondary);margin-top:3px;margin-bottom:14px}
+.chart-box{position:relative;width:100%;height:220px;margin-bottom:14px}
+.chart-box.h260{height:230px}
+.chart-box.trend{height:200px}
+@media (min-width:1024px){
+  .chart-box{height:260px}
+  .chart-box.h260{height:280px}
+  .chart-box.trend{height:280px}
+}
+.analytics-grid{display:grid;grid-template-columns:1fr;gap:16px}
+@media (min-width:1024px){ .analytics-grid{grid-template-columns:repeat(2,1fr)} }
+
+.placeholder-box{
+  border:1px dashed var(--border);border-radius:var(--radius-sm);padding:20px;text-align:center;
+  background:repeating-linear-gradient(-45deg,transparent,transparent 8px,rgba(255,255,255,.015) 8px,rgba(255,255,255,.015) 16px);
+  margin-bottom:14px;
+}
+.placeholder-box .icon{font-size:26px;opacity:.35;margin-bottom:8px}
+.placeholder-box p{font-size:.78rem;color:var(--text-secondary);line-height:1.5}
+.placeholder-box strong{color:var(--text-primary)}
+
+/* Chart.js external tooltip (glass overlay) */
+.chart-tooltip{
+  position:absolute;pointer-events:none;transform:translate(-50%,-100%) translateY(-8px);
+  padding:8px 12px;border-radius:var(--radius-sm);font-size:12px;color:var(--text-primary);
+  z-index:10;opacity:0;transition:opacity 120ms ease;white-space:nowrap;
+  background:var(--bg-elevated);border:1px solid var(--border);
+}
+@media (min-width:1024px){
+  .chart-tooltip{background:rgba(255,255,255,.07);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.1)}
+}
+.chart-tooltip .tt-title{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);font-weight:700;margin-bottom:4px}
+.chart-tooltip .tt-line{font-size:12px;font-weight:600}
+
+/* ======================================================
+   5. VISITANTES — CONTROLS / TABLE / CARDS
+   ====================================================== */
+.visitors-controls{display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
+@media (min-width:1024px){ .visitors-controls{flex-direction:row;align-items:center} }
+.search-box{
+  display:flex;align-items:center;gap:8px;padding:11px 14px;flex:1;min-width:0;
+  border:1px solid transparent;
+}
+.search-box svg{width:17px;height:17px;color:var(--text-muted);flex-shrink:0}
+.search-box input{background:transparent;border:0;outline:0;flex:1;min-width:0;color:var(--text-primary);font-size:.85rem}
+.search-box input::placeholder{color:var(--text-muted)}
+.search-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,58,237,.2), inset 3px 3px 8px rgba(0,0,0,.5), inset -3px -3px 8px rgba(255,255,255,.04)}
+.clear-btn{width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);opacity:0;pointer-events:none;flex-shrink:0}
+.clear-btn.show{opacity:1;pointer-events:auto}
+.clear-btn svg{width:14px;height:14px}
+
+.visitors-summary{font-size:.78rem;color:var(--text-secondary);margin-bottom:14px}
+.visitors-summary strong{color:var(--text-primary)}
+
+.table-wrap{display:none;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--bg-surface);overflow:auto;max-height:640px}
+@media (min-width:1024px){ .table-wrap{display:block} }
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+thead th{
+  position:sticky;top:0;background:var(--bg-elevated);color:var(--text-secondary);
+  text-transform:uppercase;font-size:.68rem;letter-spacing:.05em;font-weight:700;
+  padding:12px 14px;text-align:left;border-bottom:1px solid var(--border);z-index:2;
+}
+tbody tr:nth-child(odd){background:#1a1a1a}
+tbody tr:nth-child(even){background:#1e1e1e}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--bg-hover)}
+td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text-primary);vertical-align:top}
+td .cell-muted{color:var(--text-muted);font-size:.75rem}
+.num{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+
+.badge-status{display:inline-block;padding:3px 9px;border-radius:var(--radius-pill);font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.badge-status.novo{background:rgba(var(--info-rgb),.15);color:var(--info)}
+.badge-status.recorrente{background:rgba(var(--success-rgb),.15);color:var(--success)}
+.badge-culto{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.68rem;font-weight:600;background:var(--bg-hover);color:var(--text-secondary);margin:2px 2px 0 0}
+
+.pagination{display:none;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;font-size:.78rem;color:var(--text-secondary);flex-wrap:wrap}
+@media (min-width:1024px){ .pagination{display:flex} }
+.pagination .pages{display:flex;gap:6px;flex-wrap:wrap}
+.page-btn{
+  min-width:34px;height:34px;padding:0 10px;font-size:.78rem;font-weight:700;color:var(--text-secondary);
+  border-radius:var(--radius-sm);
+}
+.page-btn.active{background:var(--accent);color:#fff;box-shadow:none;border-color:var(--accent)}
+.page-btn:disabled{opacity:.4;cursor:not-allowed}
+.page-btn:disabled:active{transform:none}
+
+.visitor-cards{display:flex;flex-direction:column;gap:10px}
+@media (min-width:1024px){ .visitor-cards{display:none} }
+.visitor-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px}
+.visitor-card:active{transform:scale(.98);background:var(--bg-hover)}
+.vc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.vc-name{font-weight:700;font-size:.92rem;color:var(--text-primary)}
+.vc-meta{font-size:.74rem;color:var(--text-secondary);margin-top:4px;line-height:1.5}
+.vc-cultos{margin-top:8px}
+
+.btn-load-more{display:none;width:100%;padding:14px;text-align:center;font-weight:700;font-size:.82rem;color:var(--text-primary);margin-top:14px;border-radius:var(--radius-md)}
+.btn-load-more.has-more{display:block}
+@media (min-width:1024px){ .btn-load-more.has-more{display:none} }
+
+.empty-state{text-align:center;padding:40px 16px;color:var(--text-secondary);font-size:.85rem}
+
+/* ======================================================
+   6. BUTTONS
+   ====================================================== */
+.btn{border:0;border-radius:var(--radius-sm);padding:11px 18px;font-size:.8rem;font-weight:700;display:inline-flex;align-items:center;gap:8px}
+.btn svg{width:16px;height:16px}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{filter:brightness(1.15);transform:translateY(-1px)}
+@media (max-width:1023.98px){ .btn-primary:hover{transform:none} }
+.btn-secondary{color:var(--text-secondary)}
+.btn-secondary:hover{color:var(--text-primary)}
+.btn-block{width:100%;justify-content:center}
+
+/* ======================================================
+   7. MODALS
+   ====================================================== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{
+  width:100%;max-width:420px;max-height:85vh;overflow:auto;border-radius:var(--radius-lg);padding:22px;
+  background:rgba(36,36,36,.9);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.08);
+}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-head h3{font-size:1rem;font-weight:700;color:var(--text-primary)}
+.modal-body{display:flex;flex-direction:column;gap:16px}
+.field-group label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);font-weight:700;margin-bottom:8px}
+.date-range-row{display:flex;align-items:center;gap:8px}
+.date-range-row span{color:var(--text-muted);font-size:.78rem}
+.date-range-row input{flex:1;min-width:0;background:transparent;border:0;color:var(--text-primary);padding:10px 12px;outline:0;font-size:.82rem}
+.modal-actions{display:flex;gap:10px;margin-top:18px}
+.modal-actions .btn{flex:1}
+.person-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.person-item .k{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-secondary);font-weight:700}
+.person-item .v{font-size:.85rem;margin-top:4px;color:var(--text-primary)}
+.visit-timeline{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.visit-tag{font-size:.72rem;padding:6px 10px;border-radius:8px;background:var(--bg-hover);border:1px solid var(--border);color:var(--text-secondary)}
+
+/* ======================================================
+   8. EXPORTAR TAB
+   ====================================================== */
+.export-grid{display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:20px}
+@media (min-width:1024px){ .export-grid{grid-template-columns:repeat(2,1fr)} }
+.export-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px}
+.export-card .export-icon{width:38px;height:38px;color:var(--accent);margin-bottom:14px}
+.export-card h2{font-size:1.05rem;font-weight:700;color:var(--text-primary);margin-bottom:8px}
+.export-card p{font-size:.82rem;color:var(--text-secondary);line-height:1.6;margin-bottom:18px}
+.export-preview{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+.export-preview h3{font-size:.9rem;font-weight:700;margin-bottom:12px;color:var(--text-primary)}
+.toast{
+  position:fixed;bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);left:50%;
+  transform:translateX(-50%) translateY(12px);background:var(--bg-elevated);border:1px solid var(--border);
+  color:var(--text-primary);padding:12px 18px;border-radius:var(--radius-sm);font-size:.8rem;font-weight:600;
+  z-index:300;opacity:0;pointer-events:none;transition:opacity 220ms ease, transform 220ms ease;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+}
+@media (min-width:1024px){ .toast{bottom:24px} }
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ======================================================
+   9. PRINT
+   ====================================================== */
+.print-report{display:none}
+@media print{
+  body{background:#fff !important;color:#000 !important;animation:none !important}
+  .mesh-bg,.sidebar,.app-header,.bottom-tabbar,.period-chips-mobile,.modal-overlay,.toast,.app-main > .content{display:none !important}
+  .print-report{display:block !important;padding:24px;color:#000}
+  .print-report h1{font-size:20px;margin-bottom:4px}
+  .print-report .pr-meta{font-size:11px;color:#555;margin-bottom:18px}
+  .print-report table{width:100%;border-collapse:collapse;font-size:11px}
+  .print-report th,.print-report td{border:1px solid #ccc;padding:6px 8px;text-align:left}
+  .print-report .pr-kpis{display:flex;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+  .print-report .pr-kpi{border:1px solid #ccc;padding:10px 14px;border-radius:6px}
+  .print-report .pr-kpi .v{font-size:20px;font-weight:700}
+  .print-report .pr-kpi .l{font-size:10px;text-transform:uppercase;color:#555}
+}
+</style>
+</head>
+<body>
+
+<div class="mesh-bg" aria-hidden="true"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-parallax" id="sidebarParallax"></div>
+  <div class="sidebar-inner">
+    <div class="brand">
+      <img src="logo.jpg" alt="Sara Morumbi Sul" class="brand-logo">
+      <div class="brand-text">
+        <span class="brand-sub">Sara Nossa Terra</span>
+        <span class="brand-main">Morumbi Sul</span>
+      </div>
+    </div>
+    <nav class="side-nav" id="sideNav">
+      <div class="nav-indicator" id="navIndicator"></div>
+      <button class="nav-item active" data-tab="visao" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Visão Geral</span></button>
+      <button class="nav-item" data-tab="visitantes" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15.8 14.2c2.6.4 4.7 2.6 4.7 5.6"/></svg><span>Visitantes</span></button>
+      <button class="nav-item" data-tab="analises" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V10"/><path d="M12 19V5"/><path d="M20 19v-7"/><path d="M3 19h18"/></svg><span>Análises</span></button>
+      <button class="nav-item" data-tab="exportar" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg><span>Exportar</span></button>
+    </nav>
+    <div class="sidebar-footer" id="sidebarFooter"></div>
+  </div>
+</aside>
+
+<div class="app-main" id="appMain">
+  <header class="app-header" id="appHeader">
+    <div class="header-mobile-only">
+      <button class="icon-btn" id="mobileFilterBtn" type="button" aria-label="Abrir filtros"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M7 12h10"/><path d="M10 19h4"/></svg></button>
+      <img src="logo.jpg" alt="" class="header-logo">
+      <h1 class="page-title" id="pageTitleMobile">Visão Geral</h1>
+    </div>
+    <div class="header-desktop-only">
+      <h1 class="page-title" id="pageTitleDesktop">Visão Geral</h1>
+      <div class="period-presets" id="periodPresetsDesktop"></div>
+      <button class="icon-btn neu" id="desktopFilterBtn" type="button" aria-label="Filtros avançados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M7 12h10"/><path d="M10 19h4"/></svg></button>
+    </div>
+  </header>
+
+  <div class="period-chips-mobile" id="periodChipsMobile"></div>
+
+  <main class="content" id="content">
+
+    <!-- VISÃO GERAL -->
+    <section class="tab-panel active" id="tab-visao">
+      <p class="page-lead" id="visaoLead">Carregando dados dos cultos oficiais…</p>
+      <div class="kpi-grid" id="kpiGrid"></div>
+
+      <section class="block">
+        <div class="block-head"><h2>Tendência de visitantes</h2><p>Registros por culto com média móvel de 3</p></div>
+        <div class="chart-card animate-in" id="trendCard">
+          <div class="chart-box trend"><canvas id="chartTrend"></canvas></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><h2>Radar pastoral</h2><p>Insights automáticos do filtro atual</p></div>
+        <div class="insights-row" id="insightsRow"></div>
+      </section>
+    </section>
+
+    <!-- VISITANTES -->
+    <section class="tab-panel" id="tab-visitantes">
+      <div class="visitors-controls">
+        <div class="search-box neu" id="searchBox">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg>
+          <input type="search" id="searchInput" placeholder="Buscar nome, telefone, e-mail ou culto…" autocomplete="off">
+          <button class="clear-btn" id="clearSearchBtn" type="button" aria-label="Limpar busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button>
+        </div>
+        <div class="chip-scroll" id="statusFilterChips"></div>
+      </div>
+
+      <p class="visitors-summary" id="visitorsSummary"></p>
+
+      <div class="table-wrap animate-in" id="tableWrap">
+        <table id="visitorsTable">
+          <thead>
+            <tr>
+              <th>Pessoa</th><th>Contato</th><th>Sexo</th><th>Origem</th>
+              <th>Cultos</th><th style="text-align:right">Visitas</th><th>Última visita</th>
+            </tr>
+          </thead>
+          <tbody id="visitorsTbody"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
+
+      <div class="visitor-cards" id="visitorCards"></div>
+      <button class="btn-load-more neu" id="loadMoreBtn" type="button">Carregar mais</button>
+    </section>
+
+    <!-- ANÁLISES -->
+    <section class="tab-panel" id="tab-analises">
+      <p class="page-lead">Gráficos detalhados do período e cultos filtrados.</p>
+      <div class="analytics-grid">
+        <div class="chart-card animate-in">
+          <h3>Visitantes por mês</h3><div class="hint">Total de registros no período filtrado</div>
+          <div class="chart-box h260"><canvas id="chartMes"></canvas></div>
+        </div>
+        <div class="chart-card animate-in">
+          <h3>Novos visitantes</h3><div class="hint">Primeira visita registrada no mês</div>
+          <div class="chart-box h260"><canvas id="chartNovos"></canvas></div>
+        </div>
+        <div class="chart-card animate-in">
+          <h3>Distribuição por culto</h3><div class="hint">Fé e Milagres · Quinta Profética · Arena · Culto da Família</div>
+          <div class="chart-box h260"><canvas id="chartCultos"></canvas></div>
+        </div>
+        <div class="chart-card animate-in">
+          <h3>Por dia da semana</h3><div class="hint">Volume acumulado no filtro</div>
+          <div class="chart-box h260"><canvas id="chartWeekday"></canvas></div>
+        </div>
+        <div class="chart-card animate-in">
+          <h3>Masculino × Feminino</h3><div class="hint">Distribuição por gênero dos visitantes</div>
+          <div class="chart-box h260"><canvas id="chartGenero"></canvas></div>
+          <div class="placeholder-box" style="display:none" id="generoPlaceholder">
+            <div class="icon">◐</div><p><strong>Sem dados de sexo no filtro atual</strong><br>Os registros deste período ainda não possuem essa informação.</p>
+          </div>
+        </div>
+        <div class="chart-card animate-in">
+          <h3>Origem da visita</h3><div class="hint">Como as pessoas chegaram à igreja</div>
+          <div class="chart-box h260"><canvas id="chartOrigem"></canvas></div>
+          <div class="placeholder-box" style="display:none" id="origemPlaceholder">
+            <div class="icon">◎</div><p><strong>Sem dados de origem no filtro atual</strong><br>Nenhum registro com "Como conheceu a igreja" neste recorte.</p>
+          </div>
+        </div>
+        <div class="chart-card animate-in">
+          <h3>Frequência de retorno</h3><div class="hint">Quantas vezes cada pessoa visitou</div>
+          <div class="chart-box h260"><canvas id="chartFreq"></canvas></div>
+        </div>
+        <div class="chart-card animate-in">
+          <h3>Membros × Crianças</h3><div class="hint">Contagem oficial de presença por culto no filtro</div>
+          <div class="chart-box h260"><canvas id="chartParticipacao"></canvas></div>
+          <div class="placeholder-box" style="display:none" id="participacaoPlaceholder">
+            <div class="icon">▣</div><p><strong>Sem contagem de participação no filtro atual</strong><br>Nenhum registro de membros/crianças neste recorte.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPORTAR -->
+    <section class="tab-panel" id="tab-exportar">
+      <p class="page-lead">Baixe os dados filtrados em CSV ou gere um relatório para impressão.</p>
+      <div class="export-grid">
+        <div class="export-card animate-in">
+          <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg>
+          <h2>Exportar CSV</h2>
+          <p id="exportCsvDesc">Baixe a lista de visitantes do filtro atual em formato CSV, compatível com Excel e Google Sheets.</p>
+          <button class="btn btn-primary" id="btnExportCsv" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg> Baixar CSV</button>
+        </div>
+        <div class="export-card animate-in">
+          <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="6" rx="1"/><path d="M6 17H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg>
+          <h2>Imprimir relatório</h2>
+          <p id="exportPrintDesc">Gere um relatório resumido com KPIs e a lista de visitantes filtrados, pronto para impressão.</p>
+          <button class="btn btn-secondary neu" id="btnPrint" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="6" rx="1"/><path d="M6 17H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg> Imprimir</button>
+        </div>
+      </div>
+      <div class="export-preview animate-in" id="exportPreview">
+        <h3>Pré-visualização</h3>
+        <div id="exportPreviewBody" class="visitors-summary"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<nav class="bottom-tabbar glass" id="bottomTabbar">
+  <div class="tabbar-indicator" id="tabbarIndicator"></div>
+  <button class="tab-btn active" data-tab="visao" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Visão</span></button>
+  <button class="tab-btn" data-tab="visitantes" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15.8 14.2c2.6.4 4.7 2.6 4.7 5.6"/></svg><span>Visitantes</span></button>
+  <button class="tab-btn" data-tab="analises" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V10"/><path d="M12 19V5"/><path d="M20 19v-7"/><path d="M3 19h18"/></svg><span>Análises</span></button>
+  <button class="tab-btn" data-tab="exportar" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg><span>Exportar</span></button>
+</nav>
+
+<div class="modal-overlay" id="filterModalOverlay">
+  <div class="modal" id="filterModal" role="dialog" aria-modal="true" aria-labelledby="filterModalTitle">
+    <div class="modal-head"><h3 id="filterModalTitle">Filtros avançados</h3><button class="icon-btn" id="closeFilterModal" type="button" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label>Período personalizado</label>
+        <div class="date-range-row neu">
+          <input type="date" id="dateFromInput">
+          <span>até</span>
+          <input type="date" id="dateToInput">
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Cultos</label>
+        <div class="chip-scroll" id="cultoChipsModal"></div>
+      </div>
+      <div class="field-group" id="retornoFieldGroup">
+        <label>Status de visita</label>
+        <div class="chip-scroll" id="retornoChipsModal"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary neu" id="btnClearFilters" type="button">Limpar filtros</button>
+      <button class="btn btn-primary" id="btnApplyFilters" type="button">Aplicar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="personModalOverlay">
+  <div class="modal" id="personModal" role="dialog" aria-modal="true" aria-labelledby="personModalName">
+    <div class="modal-head"><h3 id="personModalName">Pessoa</h3><button class="icon-btn" id="closePersonModal" type="button" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg></button></div>
+    <div class="modal-body" id="personModalBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="print-report" id="printReport"></div>
+
+<script id="dashboard-data" type="application/json">__DATA_JSON__</script>
+<script>__CHARTJS__</script>
+<script>
+"use strict";
+const RAW = JSON.parse(document.getElementById('dashboard-data').textContent);
+const CULTOS = RAW.cultos;
+const CULT_MAP = Object.fromEntries(CULTOS.map(c => [c.id, c]));
+
+const SERIES_COLORS = ['#7c3aed','#10b981','#f59e0b','#3b82f6','#ef4444','#a78bfa'];
+const COLORS = {
+  text:'#9ca3af', grid:'rgba(255,255,255,.06)',
+  accent:'#7c3aed', success:'#10b981', warning:'#f59e0b', info:'#3b82f6', danger:'#ef4444',
+  series: SERIES_COLORS,
+  muted:'#6b7280'
+};
+
+if(window.Chart){
+  Chart.defaults.color = COLORS.text;
+  Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.borderColor = COLORS.grid;
+}
+
+/* ---------------- ICONS (inline SVG, no external deps) ---------------- */
+const SVG = {
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg>',
+  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M18 13l-6 6-6-6"/></svg>',
+  chevronLeft:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  chevronRight:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>'
+};
+
+let charts = {};
+let mobileVisibleCount = 12;
+const MOBILE_PAGE_STEP = 12;
+
+let state = {
+  dateFrom: RAW.meta.periodo_inicio ? isoFromBr(RAW.meta.periodo_inicio) : '',
+  dateTo: RAW.meta.periodo_fim ? isoFromBr(RAW.meta.periodo_fim) : '',
+  preset: 'all',
+  cultos: new Set(CULTOS.map(c => c.id)),
+  search: '',
+  retorno: 'all',
+  page: 1,
+  pageSize: 25,
+  activeTab: 'visao'
+};
+
+function isoFromBr(d){ if(!d) return ''; const [dd,mm,yy]=d.split('/'); return `${yy}-${mm}-${dd}`; }
+function brFromIso(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+function fmtMonth(m){ const [y,mo]=m.split('-'); const n=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez']; return n[+mo-1]+'/'+y.slice(2); }
+function fmtNum(n){ return (n||0).toLocaleString('pt-BR'); }
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function mondayOf(iso){ const d = new Date(iso+'T00:00:00'); const day = (d.getDay()+6)%7; d.setDate(d.getDate()-day); return d.toISOString().slice(0,10); }
+function splitTrendPct(arr){
+  if(!arr.length) return 0;
+  const half = Math.floor(arr.length/2);
+  const a = arr.slice(0,half).reduce((x,y)=>x+y,0);
+  const b = arr.slice(half).reduce((x,y)=>x+y,0);
+  return a ? Math.round((b-a)/a*1000)/10 : (b>0 ? 100 : 0);
+}
+
+function isMobile(){ return window.matchMedia('(max-width:1023.98px)').matches; }
+
+function inRange(iso){
+  if(state.dateFrom && iso < state.dateFrom) return false;
+  if(state.dateTo && iso > state.dateTo) return false;
+  return true;
+}
+
+function filterRegistros(){
+  return RAW.registros.filter(r => state.cultos.has(r.culto_id) && inRange(r.data_iso));
+}
+function filterParticipacao(){
+  return (RAW.participacao || []).filter(r => state.cultos.has(r.culto_id) && inRange(r.date_iso));
+}
+
+/* ---------------- STATS ---------------- */
+function computeStats(regs, participacao){
+  const byCultoDate = {}, byPhone = {}, byMonth = {}, novosMonth = {}, byWeek = {};
+  const firstSeen = {};
+  const sorted = [...regs].sort((a,b)=>a.data_iso.localeCompare(b.data_iso));
+
+  for(const r of sorted){
+    const cultoDateKey = `${r.data_iso}__${r.culto_id}`;
+    if(!byCultoDate[cultoDateKey]) byCultoDate[cultoDateKey] = {date:r.data, date_iso:r.data_iso, culto_id:r.culto_id, culto:r.culto, weekday:r.weekday, count:0};
+    byCultoDate[cultoDateKey].count++;
+
+    const key = r.telefone_norm || r.nome.toLowerCase();
+    if(!byPhone[key]) byPhone[key] = {nome:r.nome, telefone:r.telefone, email:r.email, visitas:0, cultos:new Set(), historico:[], genero:null, origem:null, observacao:null};
+    byPhone[key].visitas++;
+    byPhone[key].cultos.add(r.culto);
+    byPhone[key].historico.push({data:r.data, data_iso:r.data_iso, culto:r.culto, hora:r.hora});
+    byPhone[key].nome = r.nome || byPhone[key].nome;
+    if(r.genero) byPhone[key].genero = r.genero;
+    if(r.origem) byPhone[key].origem = r.origem;
+    if(r.contato && r.contato !== '-') byPhone[key].observacao = r.contato;
+
+    const mk = r.data_iso.slice(0,7);
+    byMonth[mk] = (byMonth[mk]||0) + 1;
+    if(!firstSeen[key]){ firstSeen[key]=r.data_iso; novosMonth[mk]=(novosMonth[mk]||0)+1; }
+
+    const wk = mondayOf(r.data_iso);
+    byWeek[wk] = (byWeek[wk]||0) + 1;
+  }
+
+  const cultoOrder = Object.fromEntries(CULTOS.map((c, i) => [c.id, i]));
+  const ranking = Object.values(byCultoDate).sort((a,b)=>a.date_iso.localeCompare(b.date_iso) || (cultoOrder[a.culto_id] ?? 999) - (cultoOrder[b.culto_id] ?? 999));
+
+  const counts = ranking.map(r=>r.count);
+  const evolucao = ranking.map((r,i)=>{
+    const chunk = counts.slice(Math.max(0,i-2), i+1);
+    return {...r, ma3: Math.round(chunk.reduce((a,b)=>a+b,0)/chunk.length*100)/100};
+  });
+
+  const distCulto = CULTOS.map(c=>({...c, count: regs.filter(r=>r.culto_id===c.id).length}));
+  const distWd = ['Terça','Quinta','Sábado','Domingo'].map(day=>({day, count: regs.filter(r=>r.weekday===day).length}));
+
+  const months = [...new Set(Object.keys(byMonth))].sort();
+  const crescimento = months.map((m,i)=>{
+    const count = byMonth[m];
+    const prev = i? byMonth[months[i-1]] : null;
+    const pct = prev? Math.round((count-prev)/prev*1000)/10 : null;
+    return {month:m, count, pct};
+  });
+  const novosPorMes = months.map(m=>({month:m, count: novosMonth[m]||0}));
+
+  const pessoas = Object.values(byPhone).map(p=>{
+    const hist = p.historico;
+    const ultimaIso = hist[hist.length-1].data_iso;
+    return {
+      nome: p.nome||'Sem nome', telefone:p.telefone, email:p.email||'',
+      visitas:p.visitas, cultos:[...p.cultos], historico:hist,
+      genero:p.genero, origem:p.origem, observacao:p.observacao,
+      primeira:hist[0].data, ultima:hist[hist.length-1].data, ultima_iso:ultimaIso
+    };
+  }).sort((a,b)=>b.ultima_iso.localeCompare(a.ultima_iso) || b.visitas-a.visitas || a.nome.localeCompare(b.nome));
+
+  const genero = {masculino:0, feminino:0, nao_informado:0};
+  const origemMap = {};
+  for(const r of sorted){
+    if(r.genero==='masculino') genero.masculino++;
+    else if(r.genero==='feminino') genero.feminino++;
+    else genero.nao_informado++;
+    if(r.origem) origemMap[r.origem] = (origemMap[r.origem]||0)+1;
+  }
+  const origem = Object.entries(origemMap).sort((a,b)=>b[1]-a[1]).map(([nome,count])=>({nome, count}));
+
+  const retornaram = pessoas.filter(p=>p.visitas>1).length;
+  const freq = {};
+  pessoas.forEach(p=>{ freq[p.visitas]=(freq[p.visitas]||0)+1; });
+
+  const maior = ranking.length? ranking.reduce((a,b)=>b.count>a.count?b:a) : null;
+  const menor = ranking.length? ranking.reduce((a,b)=>b.count<a.count?b:a) : null;
+  const media = ranking.length? Math.round(regs.length/ranking.length*100)/100 : 0;
+
+  const tendencia = splitTrendPct(counts);
+
+  const weekKeys = Object.keys(byWeek).sort();
+  const weeklyCounts = weekKeys.map(k=>byWeek[k]);
+  const mediaSemanal = weekKeys.length? Math.round(regs.length/weekKeys.length*10)/10 : 0;
+  const weeklyTrend = splitTrendPct(weeklyCounts);
+
+  const novosEsteMes = novosPorMes.length? novosPorMes[novosPorMes.length-1].count : 0;
+  let novosTrendPct = null;
+  if(novosPorMes.length>=2){
+    const prev = novosPorMes[novosPorMes.length-2].count;
+    novosTrendPct = prev? Math.round((novosEsteMes-prev)/prev*1000)/10 : (novosEsteMes>0?100:0);
+  }
+
+  const taxaRetorno = pessoas.length? Math.round(retornaram/pessoas.length*1000)/10 : 0;
+
+  const part = participacao || [];
+  const totalMembros = part.reduce((a,r)=>a+(r.member_count||0),0);
+  const totalCriancas = part.reduce((a,r)=>a+(r.children_count||0),0);
+
+  return {
+    total: regs.length, n_cultos: ranking.length, unicos: pessoas.length, retornaram, media,
+    maior, menor, ranking: [...ranking].sort((a,b)=>b.count-a.count),
+    evolucao, distCulto, distWd, crescimento,
+    novos_por_mes: novosPorMes,
+    pessoas, freq, tendencia, genero, origem,
+    participacao: part, totalMembros, totalCriancas,
+    mediaSemanal, weeklyTrend, novosEsteMes, novosTrendPct, taxaRetorno
+  };
+}
+
+/* ---------------- KPI RENDER ---------------- */
+function badgeHtml(pct, flatLabel){
+  if(flatLabel) return `<span class="kpi-badge flat">${flatLabel}</span>`;
+  if(pct === null || pct === undefined) return '';
+  const up = pct >= 0;
+  return `<span class="kpi-badge ${up?'up':'down'}">${up?SVG.up:SVG.down} ${up?'+':''}${pct}%</span>`;
+}
+
+function renderKpis(s){
+  const items = [
+    {
+      icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c0-4.1 3.4-7.5 7.5-7.5s7.5 3.4 7.5 7.5"/></svg>',
+      value: fmtNum(s.total), label:'Total de visitantes', badge: badgeHtml(s.tendencia)
+    },
+    {
+      icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/><path d="M18 8v6"/><path d="M15 11h6"/></svg>',
+      value: fmtNum(s.novosEsteMes), label:'Novos este mês', badge: badgeHtml(s.novosTrendPct)
+    },
+    {
+      icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2 7 4-14 2 7h6"/></svg>',
+      value: s.mediaSemanal.toLocaleString('pt-BR'), label:'Média semanal', badge: badgeHtml(s.weeklyTrend)
+    },
+    {
+      icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h11a4 4 0 0 1 4 4v1"/><path d="M8 4L4 7l4 3"/><path d="M20 17H9a4 4 0 0 1-4-4v-1"/><path d="M16 20l4-3-4-3"/></svg>',
+      value: `${s.taxaRetorno}%`, label:'Taxa de retorno', badge: badgeHtml(null, `${fmtNum(s.retornaram)} pessoas`)
+    }
+  ];
+  document.getElementById('kpiGrid').innerHTML = items.map((it,i)=>`
+    <div class="kpi-card animate-in" style="transition-delay:${Math.min(i,3)*60}ms">
+      <div class="kpi-icon">${it.icon}</div>
+      <div class="kpi-value">${it.value}</div>
+      <div class="kpi-label">${it.label}</div>
+      ${it.badge}
+    </div>
+  `).join('');
+  observeAnimated(document.getElementById('kpiGrid'));
+}
+
+function renderLead(s){
+  const cultoLabel = [...state.cultos].map(id=>CULT_MAP[id]?.nome).filter(Boolean).join(' · ') || 'todos os cultos';
+  document.getElementById('visaoLead').textContent =
+    `${fmtNum(s.total)} visitantes em ${s.n_cultos} cultos (${cultoLabel}). Período: ${brFromIso(state.dateFrom)||'…'} a ${brFromIso(state.dateTo)||'…'}.`;
+}
+
+function renderInsights(s){
+  const insights = [];
+  if(s.maior) insights.push({tag:'Pico', txt:`O maior fluxo foi <strong>${fmtNum(s.maior.count)} visitantes</strong> em ${s.maior.date} (${s.maior.culto}).`});
+  if(s.distCulto.length){
+    const top = [...s.distCulto].sort((a,b)=>b.count-a.count)[0];
+    insights.push({tag:'Culto líder', txt:`<strong>${top.nome}</strong> concentra ${fmtNum(top.count)} registros (${s.total?Math.round(top.count/s.total*100):0}% do total).`});
+  }
+  const pctRet = s.unicos? Math.round(s.retornaram/s.unicos*1000)/10 : 0;
+  insights.push({tag:'Retorno', txt:`<strong>${fmtNum(s.retornaram)}</strong> pessoas voltaram mais de uma vez (${pctRet}% dos únicos).`});
+  if(s.crescimento.length>1){
+    const last = s.crescimento[s.crescimento.length-1];
+    if(last.pct!==null) insights.push({tag:'Mês recente', txt:`Último mês: <strong>${fmtNum(last.count)}</strong> visitantes (${last.pct>=0?'+':''}${last.pct}% vs anterior).`});
+  }
+  const abaixo = s.ranking.filter(r=>r.count < s.media * 0.6);
+  if(abaixo.length) insights.push({tag:'Atenção', txt:`<strong>${abaixo.length}</strong> culto(s) abaixo de 60% da média — oportunidade de acompanhamento.`});
+  if(s.genero.masculino + s.genero.feminino > 0){
+    const pctF = Math.round(s.genero.feminino/(s.genero.masculino+s.genero.feminino)*100);
+    insights.push({tag:'Perfil', txt:`No recorte atual: <strong>${pctF}% feminino</strong> e <strong>${100-pctF}% masculino</strong>.`});
+  }
+  if(s.origem.length) insights.push({tag:'Origem', txt:`Principal canal: <strong>${escapeHtml(s.origem[0].nome)}</strong> (${fmtNum(s.origem[0].count)} registros).`});
+  if(s.participacao.length){
+    const topPart = [...s.participacao].sort((a,b)=>(b.member_count+b.children_count)-(a.member_count+a.children_count))[0];
+    insights.push({tag:'Participação', txt:`Maior presença: <strong>${fmtNum(topPart.member_count)} membros</strong> e <strong>${fmtNum(topPart.children_count)} crianças</strong> em ${topPart.date} (${topPart.culto}).`});
+  }
+  document.getElementById('insightsRow').innerHTML = insights.map((it,i)=>`
+    <div class="insight-card neu animate-in" style="transition-delay:${Math.min(i,3)*60}ms">
+      <div class="insight-tag">${it.tag}</div><div class="insight-txt">${it.txt}</div>
+    </div>
+  `).join('');
+  observeAnimated(document.getElementById('insightsRow'));
+}
+
+/* ---------------- CHARTS ---------------- */
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+function getOrCreateTooltip(chart){
+  let el = chart.canvas.parentNode.querySelector('.chart-tooltip');
+  if(!el){ el = document.createElement('div'); el.className='chart-tooltip'; chart.canvas.parentNode.appendChild(el); }
+  return el;
+}
+function externalTooltip(context){
+  const {chart, tooltip} = context;
+  const el = getOrCreateTooltip(chart);
+  if(tooltip.opacity === 0){ el.style.opacity = 0; return; }
+  if(tooltip.body){
+    const titleLines = tooltip.title || [];
+    const bodyLines = tooltip.body.map(b=>b.lines).flat();
+    let inner = titleLines.map(t=>`<div class="tt-title">${escapeHtml(t)}</div>`).join('');
+    inner += bodyLines.map(l=>`<div class="tt-line">${escapeHtml(l)}</div>`).join('');
+    el.innerHTML = inner;
+  }
+  const {offsetLeft:posX, offsetTop:posY} = chart.canvas;
+  el.style.opacity = 1;
+  el.style.left = (posX + tooltip.caretX) + 'px';
+  el.style.top = (posY + tooltip.caretY) + 'px';
+}
+
+function chartOpts(extra={}){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:COLORS.text, boxWidth:12, usePointStyle:true}}, tooltip:{enabled:false, external:externalTooltip}},
+    scales:{
+      x:{grid:{color:COLORS.grid}, ticks:{color:COLORS.text}},
+      y:{grid:{color:COLORS.grid}, ticks:{color:COLORS.text}, beginAtZero:true}
+    },
+    ...extra
+  };
+}
+
+function renderCharts(s){
+  destroyChart('trend');
+  charts.trend = new Chart(document.getElementById('chartTrend'),{
+    data:{
+      labels:s.evolucao.map(d=>d.date.slice(0,5)),
+      datasets:[
+        {type:'bar', label:'Visitantes', data:s.evolucao.map(d=>d.count), backgroundColor:'rgba(124,58,237,.35)', borderRadius:4, maxBarThickness:14, order:2},
+        {type:'line', label:'Média móvel (3)', data:s.evolucao.map(d=>d.ma3), borderColor:COLORS.accent, pointRadius:0, borderWidth:2, tension:.35, order:1}
+      ]
+    },
+    options:chartOpts({interaction:{mode:'index',intersect:false}, scales:{x:{ticks:{maxRotation:90,minRotation:90,maxTicksLimit:isMobile()?12:24}}}})
+  });
+
+  destroyChart('mes');
+  charts.mes = new Chart(document.getElementById('chartMes'),{
+    type:'bar',
+    data:{labels:s.crescimento.map(d=>fmtMonth(d.month)), datasets:[{data:s.crescimento.map(d=>d.count), backgroundColor:COLORS.accent, borderRadius:6, maxBarThickness:44}]},
+    options:chartOpts({plugins:{legend:{display:false}, tooltip:{enabled:false, external:externalTooltip}}})
+  });
+
+  destroyChart('novos');
+  charts.novos = new Chart(document.getElementById('chartNovos'),{
+    type:'bar',
+    data:{labels:s.novos_por_mes.map(d=>fmtMonth(d.month)), datasets:[{data:s.novos_por_mes.map(d=>d.count), backgroundColor:COLORS.info, borderRadius:6, maxBarThickness:44}]},
+    options:chartOpts({plugins:{legend:{display:false}}})
+  });
+
+  destroyChart('cultos');
+  charts.cultos = new Chart(document.getElementById('chartCultos'),{
+    type:'doughnut',
+    data:{labels:s.distCulto.map(d=>d.nome), datasets:[{data:s.distCulto.map(d=>d.count), backgroundColor:COLORS.series, borderWidth:0}]},
+    options:{responsive:true, maintainAspectRatio:false, cutout:'62%', plugins:{legend:{position:'bottom', labels:{color:COLORS.text, boxWidth:10, padding:10}}, tooltip:{enabled:false, external:externalTooltip}}}
+  });
+
+  destroyChart('weekday');
+  charts.weekday = new Chart(document.getElementById('chartWeekday'),{
+    type:'bar',
+    data:{labels:s.distWd.map(d=>d.day), datasets:[{data:s.distWd.map(d=>d.count), backgroundColor:COLORS.success, borderRadius:6, maxBarThickness:44}]},
+    options:chartOpts({plugins:{legend:{display:false}}})
+  });
+
+  destroyChart('freq');
+  charts.freq = new Chart(document.getElementById('chartFreq'),{
+    type:'bar',
+    data:{labels:Object.keys(s.freq).map(v=>v==='1'?'1 visita':v+' visitas'), datasets:[{data:Object.values(s.freq), backgroundColor:COLORS.warning, borderRadius:6}]},
+    options:chartOpts({indexAxis:'y', plugins:{legend:{display:false}}})
+  });
+
+  destroyChart('genero');
+  const g = s.genero;
+  const hasGenero = g.masculino + g.feminino > 0;
+  document.getElementById('generoPlaceholder').style.display = hasGenero? 'none':'block';
+  charts.genero = new Chart(document.getElementById('chartGenero'),{
+    type:'doughnut',
+    data:{labels:['Masculino','Feminino','Não informado'], datasets:[{data:[g.masculino,g.feminino,g.nao_informado], backgroundColor:[COLORS.info,COLORS.accent,COLORS.muted], borderWidth:0}]},
+    options:{responsive:true, maintainAspectRatio:false, cutout:'55%', plugins:{legend:{position:'bottom', labels:{color:COLORS.text}}, tooltip:{enabled:false, external:externalTooltip}}}
+  });
+
+  destroyChart('origem');
+  const origens = s.origem || [];
+  const hasOrigem = origens.length > 0;
+  document.getElementById('origemPlaceholder').style.display = hasOrigem? 'none':'block';
+  charts.origem = new Chart(document.getElementById('chartOrigem'),{
+    type:'bar',
+    data:{labels: hasOrigem? origens.map(o=>o.nome):['—'], datasets:[{data: hasOrigem? origens.map(o=>o.count):[0], backgroundColor:COLORS.accent, borderRadius:6}]},
+    options:chartOpts({indexAxis:'y', plugins:{legend:{display:false}}})
+  });
+
+  destroyChart('participacao');
+  const part = s.participacao || [];
+  const hasPart = part.length > 0;
+  const partCanvas = document.getElementById('chartParticipacao');
+  document.getElementById('participacaoPlaceholder').style.display = hasPart? 'none':'block';
+  partCanvas.parentElement.style.display = hasPart? 'block':'none';
+  charts.participacao = new Chart(partCanvas,{
+    type:'bar',
+    data:{
+      labels: hasPart? part.map(p=>`${p.date.slice(0,5)} · ${p.culto}`):['—'],
+      datasets:[
+        {label:'Membros', data: hasPart? part.map(p=>p.member_count):[0], backgroundColor:COLORS.info, borderRadius:6, maxBarThickness:36},
+        {label:'Crianças', data: hasPart? part.map(p=>p.children_count):[0], backgroundColor:COLORS.warning, borderRadius:6, maxBarThickness:36}
+      ]
+    },
+    options:chartOpts({
+      plugins:{legend:{display:true, position:'top', labels:{color:COLORS.text, boxWidth:12, usePointStyle:true}}, tooltip:{enabled:false, external:externalTooltip}},
+      scales:{x:{grid:{color:COLORS.grid}, ticks:{color:COLORS.text, maxRotation:45, minRotation:0}}, y:{grid:{color:COLORS.grid}, ticks:{color:COLORS.text}, beginAtZero:true}}
+    })
+  });
+}
+
+/* ---------------- VISITANTES TAB ---------------- */
+function fmtGenero(g){ return g==='masculino'?'Masculino':g==='feminino'?'Feminino':'—'; }
+
+function filteredPessoas(s){
+  let list = s.pessoas;
+  const q = state.search.toLowerCase().trim();
+  if(q) list = list.filter(p =>
+    p.nome.toLowerCase().includes(q) || p.telefone.includes(q) ||
+    (p.email&&p.email.toLowerCase().includes(q)) || p.cultos.some(c=>c.toLowerCase().includes(q)) ||
+    (p.observacao&&p.observacao.toLowerCase().includes(q))
+  );
+  if(state.retorno==='novos') list = list.filter(p=>p.visitas===1);
+  if(state.retorno==='retorno') list = list.filter(p=>p.visitas>1);
+  return list;
+}
+
+let currentPessoasList = [];
+
+function renderVisitorsSummary(s, list){
+  document.getElementById('visitorsSummary').innerHTML =
+    `<strong>${fmtNum(list.length)}</strong> pessoas encontradas de <strong>${fmtNum(s.unicos)}</strong> únicas · <strong>${fmtNum(s.retornaram)}</strong> retornaram`;
+}
+
+function renderVisitorsTable(list){
+  const totalPages = Math.max(1, Math.ceil(list.length / state.pageSize));
+  state.page = Math.min(state.page, totalPages);
+  const start = (state.page-1)*state.pageSize;
+  const page = list.slice(start, start+state.pageSize);
+
+  document.getElementById('visitorsTbody').innerHTML = page.map((p,i)=>`
+    <tr data-idx="${start+i}">
+      <td><strong>${escapeHtml(p.nome)}</strong>${p.visitas>1?' <span class="badge-status recorrente">Recorrente</span>':' <span class="badge-status novo">Novo</span>'}</td>
+      <td>${escapeHtml(p.telefone)||'—'}<br><span class="cell-muted">${escapeHtml(p.email)||''}</span></td>
+      <td>${fmtGenero(p.genero)}</td>
+      <td>${escapeHtml(p.origem)||'—'}</td>
+      <td>${p.cultos.map(c=>`<span class="badge-culto">${escapeHtml(c)}</span>`).join('')}</td>
+      <td class="num">${p.visitas}</td>
+      <td>${p.ultima}</td>
+    </tr>
+  `).join('') || `<tr><td colspan="7"><div class="empty-state">Nenhuma pessoa encontrada</div></td></tr>`;
+
+  document.querySelectorAll('#visitorsTbody tr[data-idx]').forEach(tr=>{
+    tr.onclick = ()=> showPersonDetail(list[+tr.dataset.idx]);
+  });
+
+  const pages = [];
+  const win = 2;
+  for(let p=1;p<=totalPages;p++){
+    if(p===1 || p===totalPages || Math.abs(p-state.page)<=win) pages.push(p);
+    else if(pages[pages.length-1] !== '…') pages.push('…');
+  }
+  document.getElementById('pagination').innerHTML = `
+    <span>${fmtNum(list.length)} pessoas · página ${state.page}/${totalPages}</span>
+    <div class="pages">
+      <button class="page-btn neu" id="prevPageBtn" ${state.page<=1?'disabled':''} type="button">${SVG.chevronLeft}</button>
+      ${pages.map(p=>p==='…' ? `<span style="padding:0 4px;color:var(--text-muted)">…</span>` : `<button class="page-btn neu${p===state.page?' active':''}" data-page="${p}" type="button">${p}</button>`).join('')}
+      <button class="page-btn neu" id="nextPageBtn" ${state.page>=totalPages?'disabled':''} type="button">${SVG.chevronRight}</button>
+    </div>
+  `;
+  document.getElementById('prevPageBtn').onclick = ()=>{ if(state.page>1){ state.page--; renderVisitorsTable(currentPessoasList); } };
+  document.getElementById('nextPageBtn').onclick = ()=>{ if(state.page<totalPages){ state.page++; renderVisitorsTable(currentPessoasList); } };
+  document.querySelectorAll('#pagination .page-btn[data-page]').forEach(btn=>{
+    btn.onclick = ()=>{ state.page = +btn.dataset.page; renderVisitorsTable(currentPessoasList); };
+  });
+}
+
+function renderVisitorCards(list){
+  const visible = list.slice(0, mobileVisibleCount);
+  document.getElementById('visitorCards').innerHTML = visible.map((p,i)=>`
+    <div class="visitor-card" data-idx="${i}">
+      <div class="vc-top">
+        <span class="vc-name">${escapeHtml(p.nome)}</span>
+        ${p.visitas>1?'<span class="badge-status recorrente">Recorrente</span>':'<span class="badge-status novo">Novo</span>'}
+      </div>
+      <div class="vc-meta">${escapeHtml(p.telefone)||'Sem telefone'} · Última visita: ${p.ultima} · ${p.visitas} visita${p.visitas>1?'s':''}</div>
+      <div class="vc-cultos">${p.cultos.map(c=>`<span class="badge-culto">${escapeHtml(c)}</span>`).join('')}</div>
+    </div>
+  `).join('') || `<div class="empty-state">Nenhuma pessoa encontrada</div>`;
+
+  document.querySelectorAll('#visitorCards .visitor-card[data-idx]').forEach(card=>{
+    card.onclick = ()=> showPersonDetail(visible[+card.dataset.idx]);
+  });
+  document.getElementById('loadMoreBtn').classList.toggle('has-more', list.length > mobileVisibleCount);
+}
+
+function showPersonDetail(p){
+  document.getElementById('personModalName').textContent = p.nome;
+  document.getElementById('personModalBody').innerHTML = `
+    <div class="person-grid">
+      <div class="person-item"><div class="k">Telefone</div><div class="v">${escapeHtml(p.telefone)||'—'}</div></div>
+      <div class="person-item"><div class="k">E-mail</div><div class="v">${escapeHtml(p.email)||'—'}</div></div>
+      <div class="person-item"><div class="k">Sexo</div><div class="v">${fmtGenero(p.genero)}</div></div>
+      <div class="person-item"><div class="k">Como conheceu</div><div class="v">${escapeHtml(p.origem)||'—'}</div></div>
+      <div class="person-item"><div class="k">Observação</div><div class="v">${escapeHtml(p.observacao)||'—'}</div></div>
+      <div class="person-item"><div class="k">Total de visitas</div><div class="v">${p.visitas}</div></div>
+      <div class="person-item"><div class="k">Primeira / última</div><div class="v">${p.primeira} → ${p.ultima}</div></div>
+    </div>
+    <div class="person-item"><div class="k">Histórico de cultos</div>
+      <div class="visit-timeline">${p.historico.map(v=>`<span class="visit-tag">${v.data}${v.hora?` ${v.hora}`:''} · ${escapeHtml(v.culto)}</span>`).join('')}</div>
+    </div>
+  `;
+  openModal('personModalOverlay');
+}
+
+/* ---------------- EXPORTAR TAB ---------------- */
+function csvEscape(v){
+  const s = String(v==null?'':v);
+  return '"' + s.replace(/"/g,'""') + '"';
+}
+function buildCsv(list){
+  const header = ['Nome','Telefone','Email','Sexo','Origem','Observação','Cultos','Visitas','Primeira visita','Última visita'];
+  const rows = list.map(p => [
+    p.nome, p.telefone, p.email, fmtGenero(p.genero), p.origem||'', p.observacao||'',
+    p.cultos.join(' | '), p.visitas, p.primeira, p.ultima
+  ]);
+  const lines = [header, ...rows].map(r => r.map(csvEscape).join(','));
+  return '\ufeff' + lines.join('\r\n');
+}
+function downloadCsv(list){
+  const csv = buildCsv(list);
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url; a.download = `visitantes-sara-morumbi-sul-${stamp}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('CSV exportado com sucesso.');
+}
+
+function renderExport(s, list){
+  document.getElementById('exportCsvDesc').textContent =
+    `Baixe ${fmtNum(list.length)} pessoas do filtro atual (${brFromIso(state.dateFrom)||'…'} a ${brFromIso(state.dateTo)||'…'}) em formato CSV.`;
+  document.getElementById('exportPreviewBody').innerHTML =
+    `<strong>${fmtNum(list.length)}</strong> pessoas · <strong>${fmtNum(s.total)}</strong> registros · <strong>${fmtNum(s.n_cultos)}</strong> cultos no período selecionado.`;
+}
+
+function buildPrintReport(s, list){
+  const cultoLabel = [...state.cultos].map(id=>CULT_MAP[id]?.nome).filter(Boolean).join(' · ') || 'todos os cultos';
+  const rows = list.map(p => `<tr><td>${escapeHtml(p.nome)}</td><td>${escapeHtml(p.telefone)}</td><td>${fmtGenero(p.genero)}</td><td>${p.cultos.map(escapeHtml).join(', ')}</td><td>${p.visitas}</td><td>${p.ultima}</td></tr>`).join('');
+  document.getElementById('printReport').innerHTML = `
+    <h1>Sara Morumbi Sul — Painel de Visitantes</h1>
+    <p class="pr-meta">Período: ${brFromIso(state.dateFrom)||'…'} a ${brFromIso(state.dateTo)||'…'} · Cultos: ${escapeHtml(cultoLabel)} · Gerado em ${RAW.meta.gerado_em}</p>
+    <div class="pr-kpis">
+      <div class="pr-kpi"><div class="v">${fmtNum(s.total)}</div><div class="l">Registros</div></div>
+      <div class="pr-kpi"><div class="v">${fmtNum(s.unicos)}</div><div class="l">Únicos</div></div>
+      <div class="pr-kpi"><div class="v">${fmtNum(s.retornaram)}</div><div class="l">Retornaram</div></div>
+      <div class="pr-kpi"><div class="v">${s.taxaRetorno}%</div><div class="l">Taxa de retorno</div></div>
+    </div>
+    <table>
+      <thead><tr><th>Nome</th><th>Telefone</th><th>Sexo</th><th>Cultos</th><th>Visitas</th><th>Última visita</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+/* ---------------- MODALS ---------------- */
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+/* ---------------- SCROLL ANIMATIONS ---------------- */
+let observer = null;
+function setupObserver(){
+  const threshold = isMobile() ? 0.1 : 0.15;
+  if(observer) observer.disconnect();
+  observer = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {threshold});
+}
+function observeAnimated(root){
+  root.querySelectorAll('.animate-in').forEach(el=>{
+    if(!el.classList.contains('visible')) observer.observe(el);
+  });
+}
+
+/* ---------------- PARALLAX (desktop only) ---------------- */
+function setupParallax(){
+  const bg = document.getElementById('sidebarParallax');
+  if(!bg) return;
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if(isMobile()) return;
+    if(!ticking){
+      ticking = true;
+      requestAnimationFrame(()=>{
+        bg.style.transform = `translateY(${window.scrollY * 0.15}px)`;
+        ticking = false;
+      });
+    }
+  }, {passive:true});
+}
+
+/* ---------------- TABS ---------------- */
+const TAB_TITLES = {visao:'Visão Geral', visitantes:'Visitantes', analises:'Análises', exportar:'Exportar'};
+function positionNavIndicator(){
+  const active = document.querySelector('.nav-item.active');
+  const indicator = document.getElementById('navIndicator');
+  if(active && indicator) indicator.style.top = active.offsetTop + 'px';
+}
+function positionTabbarIndicator(){
+  const active = document.querySelector('.tab-btn.active');
+  const indicator = document.getElementById('tabbarIndicator');
+  if(active && indicator){
+    indicator.style.left = active.offsetLeft + 'px';
+    indicator.style.width = active.offsetWidth + 'px';
+  }
+}
+function switchTab(tab){
+  state.activeTab = tab;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active', el.dataset.tab===tab));
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.toggle('active', el.dataset.tab===tab));
+  document.querySelectorAll('.tab-panel').forEach(el=>el.classList.toggle('active', el.id === 'tab-'+tab));
+  document.getElementById('pageTitleMobile').textContent = TAB_TITLES[tab];
+  document.getElementById('pageTitleDesktop').textContent = TAB_TITLES[tab];
+  positionNavIndicator();
+  positionTabbarIndicator();
+  requestAnimationFrame(()=> Object.values(charts).forEach(c=>{ try{ c.resize(); }catch(e){} }));
+  const panel = document.getElementById('tab-'+tab);
+  if(panel) observeAnimated(panel);
+}
+
+/* ---------------- FILTERS UI ---------------- */
+function syncFilterUI(){
+  document.getElementById('dateFromInput').value = state.dateFrom;
+  document.getElementById('dateToInput').value = state.dateTo;
+  document.querySelectorAll('#cultoChipsModal .chip').forEach(c=> c.classList.toggle('active', state.cultos.has(c.dataset.id)));
+  document.querySelectorAll('.preset-chip').forEach(c=> c.classList.toggle('active', c.dataset.preset === state.preset));
+  document.querySelectorAll('#retornoChipsModal .chip').forEach(c=> c.classList.toggle('active', c.dataset.retorno === state.retorno));
+  document.querySelectorAll('#statusFilterChips .chip').forEach(c=> c.classList.toggle('active', c.dataset.retorno === state.retorno));
+}
+
+function applyPreset(preset){
+  const fim = isoFromBr(RAW.meta.periodo_fim) || new Date().toISOString().slice(0,10);
+  const inicio = isoFromBr(RAW.meta.periodo_inicio) || fim;
+  if(preset === 'all'){
+    state.dateFrom = inicio; state.dateTo = fim;
+  } else if(preset === '30' || preset === '90'){
+    const days = preset === '30' ? 30 : 90;
+    const end = new Date(fim+'T00:00:00');
+    const start = new Date(end); start.setDate(start.getDate() - days);
+    const startIso = start.toISOString().slice(0,10);
+    state.dateFrom = startIso < inicio ? inicio : startIso;
+    state.dateTo = fim;
+  } else if(preset === 'year'){
+    const y = fim.slice(0,4);
+    state.dateFrom = `${y}-01-01` < inicio ? inicio : `${y}-01-01`;
+    state.dateTo = fim;
+  }
+  state.preset = preset;
+  state.page = 1; mobileVisibleCount = MOBILE_PAGE_STEP;
+  syncFilterUI();
+  renderAll();
+}
+
+function buildPeriodChips(container, className){
+  const presets = [{id:'all', label:'Tudo'}, {id:'30', label:'30 dias'}, {id:'90', label:'90 dias'}, {id:'year', label:'Este ano'}];
+  container.innerHTML = presets.map(p=>`<button class="chip preset-chip${p.id===state.preset?' active':''}" data-preset="${p.id}" type="button">${p.label}</button>`).join('');
+  container.querySelectorAll('.preset-chip').forEach(btn=>{
+    btn.onclick = ()=> applyPreset(btn.dataset.preset);
+  });
+}
+
+/* ---------------- RENDER ALL ---------------- */
+function renderAll(){
+  const regs = filterRegistros();
+  const participacao = filterParticipacao();
+  const s = computeStats(regs, participacao);
+
+  renderLead(s);
+  renderKpis(s);
+  renderInsights(s);
+  renderCharts(s);
+
+  const list = filteredPessoas(s);
+  currentPessoasList = list;
+  renderVisitorsSummary(s, list);
+  renderVisitorsTable(list);
+  renderVisitorCards(list);
+  renderExport(s, list);
+  buildPrintReport(s, list);
+
+  document.getElementById('sidebarFooter').innerHTML =
+    `${escapeHtml(RAW.meta.igreja)}<br>${fmtNum(s.total)} registros · gerado em ${RAW.meta.gerado_em}`;
+
+  observeAnimated(document.getElementById('content'));
+}
+
+/* ---------------- INIT ---------------- */
+(function init(){
+  setupObserver();
+  setupParallax();
+
+  buildPeriodChips(document.getElementById('periodPresetsDesktop'));
+  buildPeriodChips(document.getElementById('periodChipsMobile'));
+
+  document.getElementById('cultoChipsModal').innerHTML = CULTOS.map(c=>`
+    <button class="chip active" data-id="${c.id}" type="button" title="${c.nota||''}"><span class="dot"></span>${c.dia} · ${c.nome}</button>
+  `).join('');
+  document.getElementById('cultoChipsModal').onclick = e=>{
+    const chip = e.target.closest('.chip'); if(!chip) return;
+    const id = chip.dataset.id;
+    chip.classList.toggle('active');
+    if(chip.classList.contains('active')) state.cultos.add(id); else state.cultos.delete(id);
+    if(!state.cultos.size){ state.cultos.add(id); chip.classList.add('active'); }
+  };
+
+  const retornoOptions = [{id:'all', label:'Todos'}, {id:'novos', label:'Só 1ª visita'}, {id:'retorno', label:'Voltaram +1x'}];
+  document.getElementById('retornoChipsModal').innerHTML = retornoOptions.map(o=>`<button class="chip${o.id==='all'?' active':''}" data-retorno="${o.id}" type="button">${o.label}</button>`).join('');
+  document.getElementById('retornoChipsModal').onclick = e=>{
+    const chip = e.target.closest('.chip'); if(!chip) return;
+    document.querySelectorAll('#retornoChipsModal .chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+  };
+  document.getElementById('statusFilterChips').innerHTML = retornoOptions.map(o=>`<button class="chip${o.id==='all'?' active':''}" data-retorno="${o.id}" type="button">${o.label}</button>`).join('');
+  document.getElementById('statusFilterChips').onclick = e=>{
+    const chip = e.target.closest('.chip'); if(!chip) return;
+    document.querySelectorAll('#statusFilterChips .chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    state.retorno = chip.dataset.retorno; state.page = 1; mobileVisibleCount = MOBILE_PAGE_STEP;
+    syncFilterUI();
+    renderAll();
+  };
+
+  syncFilterUI();
+
+  // Navigation
+  document.getElementById('sideNav').addEventListener('click', e=>{
+    const btn = e.target.closest('.nav-item'); if(!btn) return;
+    switchTab(btn.dataset.tab);
+  });
+  document.getElementById('bottomTabbar').addEventListener('click', e=>{
+    const btn = e.target.closest('.tab-btn'); if(!btn) return;
+    switchTab(btn.dataset.tab);
+  });
+
+  // Search
+  document.getElementById('searchInput').oninput = e=>{
+    state.search = e.target.value; state.page = 1; mobileVisibleCount = MOBILE_PAGE_STEP;
+    document.getElementById('clearSearchBtn').classList.toggle('show', !!e.target.value);
+    renderAll();
+  };
+  document.getElementById('clearSearchBtn').onclick = ()=>{
+    document.getElementById('searchInput').value = ''; state.search = ''; state.page = 1; mobileVisibleCount = MOBILE_PAGE_STEP;
+    document.getElementById('clearSearchBtn').classList.remove('show');
+    renderAll();
+  };
+
+  // Load more (mobile)
+  document.getElementById('loadMoreBtn').onclick = ()=>{
+    mobileVisibleCount += MOBILE_PAGE_STEP;
+    renderVisitorCards(currentPessoasList);
+  };
+
+  // Filter modal
+  document.getElementById('mobileFilterBtn').onclick = ()=> openModal('filterModalOverlay');
+  document.getElementById('desktopFilterBtn').onclick = ()=> openModal('filterModalOverlay');
+  document.getElementById('closeFilterModal').onclick = ()=> closeModal('filterModalOverlay');
+  document.getElementById('filterModalOverlay').addEventListener('click', e=>{ if(e.target.id==='filterModalOverlay') closeModal('filterModalOverlay'); });
+  document.getElementById('btnApplyFilters').onclick = ()=>{
+    state.dateFrom = document.getElementById('dateFromInput').value;
+    state.dateTo = document.getElementById('dateToInput').value;
+    const activeRetorno = document.querySelector('#retornoChipsModal .chip.active');
+    state.retorno = activeRetorno ? activeRetorno.dataset.retorno : 'all';
+    state.preset = 'custom'; state.page = 1; mobileVisibleCount = MOBILE_PAGE_STEP;
+    syncFilterUI();
+    renderAll();
+    closeModal('filterModalOverlay');
+  };
+  document.getElementById('btnClearFilters').onclick = ()=>{
+    state.cultos = new Set(CULTOS.map(c => c.id));
+    state.search=''; state.retorno='all'; state.page=1; mobileVisibleCount = MOBILE_PAGE_STEP;
+    document.getElementById('searchInput').value = '';
+    document.getElementById('clearSearchBtn').classList.remove('show');
+    applyPreset('all');
+    closeModal('filterModalOverlay');
+  };
+
+  // Person modal
+  document.getElementById('closePersonModal').onclick = ()=> closeModal('personModalOverlay');
+  document.getElementById('personModalOverlay').addEventListener('click', e=>{ if(e.target.id==='personModalOverlay') closeModal('personModalOverlay'); });
+
+  // Export
+  document.getElementById('btnExportCsv').onclick = ()=> downloadCsv(currentPessoasList);
+  document.getElementById('btnPrint').onclick = ()=>{ buildPrintReport(computeStats(filterRegistros(), filterParticipacao()), currentPessoasList); window.print(); };
+
+  window.addEventListener('resize', ()=>{ setupObserver(); observeAnimated(document.getElementById('content')); positionNavIndicator(); positionTabbarIndicator(); });
+
+  renderAll();
+  positionNavIndicator();
+  positionTabbarIndicator();
+})();
+</script>
+</body>
+</html>
